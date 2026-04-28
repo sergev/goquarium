@@ -8,7 +8,7 @@ Use it to quickly understand the repo, prior decisions, and safe workflows.
 - Project: `goquarium`
 - Language: Go
 - Rendering library: `github.com/gdamore/tcell/v2`
-- Module: `github.com/vak/goquarium`
+- Module: `github.com/sergev/goquarium`
 - Entry point: `main.go`
 
 ## Current Repo Layout

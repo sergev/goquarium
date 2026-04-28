@@ -12,41 +12,20 @@ This project is a Go rewrite inspired by the classic asciiquarium and the Python
 - Interactive keyboard controls
 - Works in standard terminals on Linux/macOS/Windows (with terminal support)
 
-## Documentation
-
-- [Visual Entity Catalog](Entities.md) - Full reference for all rendered entities, grouped by class with implementation details.
-
 ## Requirements
 
 - Go 1.22+
 - A terminal with color support
 - Recommended terminal size: at least `40x15`
 
-## Build
-
-Using Makefile:
+## Install
 
 ```bash
-make
+go install github.com/sergev/goquarium@latest
 ```
 
-Using Go directly:
-
-```bash
-go build
-```
-
-## Run
-
-```bash
-./goquarium
-```
-
-Or run without building:
-
-```bash
-go run .
-```
+The binary is installed to `$HOME/go/bin/goquarium`.
+Don't forget to add `$HOME/go/bin` to your PATH.
 
 ## CLI Options
 
@@ -67,20 +46,36 @@ go run .
 
 ## Development
 
+Build:
+
+```bash
+make
+```
+
+Run:
+
+```bash
+./goquarium
+```
+
 Run tests:
 
 ```bash
 make test
 ```
 
-## Install / Uninstall
+Install, uninstall:
 
 ```bash
 make install
 make uninstall
 ```
 
-By default, the Makefile installs to `$(HOME)/.local/usr/bin/goquarium`.
+By default, the Makefile installs to `$HOME/.local/usr/bin/goquarium`.
+
+## Documentation
+
+- [Visual Entity Catalog](Entities.md) - Full reference for all rendered entities, grouped by class with implementation details.
 
 ## Credits
 

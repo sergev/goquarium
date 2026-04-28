@@ -1,4 +1,4 @@
-module github.com/vak/goquarium
+module github.com/sergev/goquarium
 
 go 1.22
 
