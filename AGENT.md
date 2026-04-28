@@ -31,6 +31,7 @@ Non-code:
 
 - `Makefile`
 - `README.md`
+- `Entities.md` - visual entity catalog grouped by class
 - `LICENSE`
 
 ## Important Historical Decisions
@@ -50,6 +51,14 @@ Non-code:
 4. **Beginner-focused comments added**
    - All root Go files include explanatory comments aimed at non-expert readers.
    - Recent pass improved comments around callbacks, state machines, and frame/collision flow.
+
+5. **Visual parity restoration completed**
+   - Sea monsters now match Python-style new/old animated variants.
+   - Sharks and big fish were restored from reduced placeholder art to large masked sprites.
+   - Fishhook visuals were restored (long line, larger hook), and fish catalogs now include all expected old/new design sets.
+
+6. **Entity catalog added**
+   - `Entities.md` documents all rendered entities, grouped by class, including spawn paths, motion args, color masks, depth layers, lifecycle rules, and interactions.
 
 ## Build/Test/Lint Workflow
 
@@ -90,10 +99,17 @@ make cover
 - `TestSurfaceSpritesUseRealMultilineStrings` in `entity_test.go`
   - Protects against accidental literal `\n` sprite strings.
 - Keep this test updated if adding new surface entities.
+- `TestSeaMonsterSpritesParity` in `entity_test.go`
+  - Protects restored monster animation/mask behavior.
+- `TestFishDesignCatalogParityCounts` in `entity_test.go`
+  - Ensures fish catalog stays at 8 old and 4 new variants.
+- `TestBigFishVisualParity`, `TestSharkAndTeethParity`, `TestFishhookVisualParity` in `entity_test.go`
+  - Protect restored special-entity visual geometry and linked-part expectations.
 
 ## If Starting a New Session
 
 1. Run `go test ./...` to verify baseline.
 2. If visuals look wrong, inspect sprite text and masks first.
 3. For parity questions, compare against https://github.com/MKAbuMattar/asciiquarium-python/asciiquarium/entities/*.py.
-4. Preserve beginner-friendly comments when refactoring.
+4. Use `Entities.md` to quickly locate an entity's spawn path and rendering behavior.
+5. Preserve beginner-friendly comments when refactoring.

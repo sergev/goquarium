@@ -12,6 +12,10 @@ This project is a Go rewrite inspired by the classic asciiquarium and the Python
 - Interactive keyboard controls
 - Works in standard terminals on Linux/macOS/Windows (with terminal support)
 
+## Documentation
+
+- [Visual Entity Catalog](Entities.md) - Full reference for all rendered entities, grouped by class with implementation details.
+
 ## Requirements
 
 - Go 1.22+
@@ -67,19 +71,6 @@ Run tests:
 
 ```bash
 make test
-```
-
-Coverage:
-
-```bash
-make cover
-```
-
-Format and test quickly:
-
-```bash
-gofmt -w *.go
-go test ./...
 ```
 
 ## Install / Uninstall
