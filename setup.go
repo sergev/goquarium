@@ -1,4 +1,4 @@
-package aquarium
+package main
 
 func SetupAquarium(anim *Animation, classicMode bool) {
 	AddEnvironment(anim)

@@ -1,4 +1,4 @@
-package aquarium
+package main
 
 var Depth = map[string]int{
 	"gui_text":    0,

@@ -1,4 +1,4 @@
-package aquarium
+package main
 
 import (
 	"flag"

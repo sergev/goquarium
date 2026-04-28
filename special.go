@@ -1,4 +1,4 @@
-package aquarium
+package main
 
 import (
 	"math/rand"
@@ -268,10 +268,12 @@ func AddDolphins(_ *Entity, anim *Animation) {
 	}[dir]
 	for i := 0; i < 3; i++ {
 		anim.NewEntity(NewEntityOptions{
-			Shape:        shape,
-			AutoTrans:    true,
-			Position:     [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
-			CallbackArgs: []float64{speed, 0, 0, 0.5},
+			Shape:     shape,
+			AutoTrans: true,
+			Position:  [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
+			CallbackArgs: []float64{
+				speed, 0, 0, 0.5,
+			},
 			DeathCallback: func(_ *Entity, a *Animation) {
 				if i == 0 {
 					RandomObject(nil, a)
