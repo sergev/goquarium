@@ -1,8 +1,8 @@
 package main
 
-// Depth stores drawing layers used by moving objects.
-// Bigger/smaller numbers decide what appears in front.
-// This helps keep fish, water, and props ordered correctly.
+// Depth is a small layer legend used while drawing.
+// In this project, objects with higher depth are drawn later (in front).
+// We keep named values so entity spawners stay readable for beginners.
 var Depth = map[string]int{
 	"gui_text":    0,
 	"gui":         1,

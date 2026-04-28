@@ -17,9 +17,9 @@ type EntityCollisionHandler func(*Entity, *Animation)
 // It can spawn replacement entities or trigger follow-up effects.
 type EntityDeathHandler func(*Entity, *Animation)
 
-// Entity stores all data needed to draw and animate one object.
-// It keeps shape frames, position, movement callbacks, and life rules.
-// Most creatures and props in the aquarium use this same structure.
+// Entity stores everything needed for one on-screen object.
+// It includes sprite frames, movement data, collision data, and life rules.
+// Fish, bubbles, hooks, and decorations all use this same base type.
 type Entity struct {
 	Name       string
 	EntityType string
@@ -53,9 +53,9 @@ type Entity struct {
 	height       int
 }
 
-// NewEntityOptions is the input bundle for creating an Entity.
-// Grouping fields in one struct keeps constructor calls readable.
-// It also makes optional settings easier to pass.
+// NewEntityOptions is the input bundle used by NewEntity.
+// Shape/Color can be string (single frame) or []string (animated frames).
+// CallbackArgs can be []float64 movement data or a custom mode map.
 type NewEntityOptions struct {
 	Name          string
 	EntityType    string
@@ -180,9 +180,9 @@ func (e *Entity) CurrentColor() string {
 	return e.Colors[e.CurrentFrame%len(e.Colors)]
 }
 
-// MoveEntity applies default movement from callback arguments.
-// It also advances animation frames using configured frame speed.
-// This is used when no custom callback is provided.
+// MoveEntity is the default movement logic when no custom callback exists.
+// For []float64 args, order is [dx, dy, dz, frameStep].
+// frameStep accumulates until >= 1, then frame index is advanced.
 func (e *Entity) MoveEntity(_ *Animation) bool {
 	switch args := e.CallbackArgs.(type) {
 	case []float64:
@@ -239,9 +239,9 @@ func (e *Entity) ShouldDie(screenWidth, screenHeight int, now time.Time) bool {
 	return false
 }
 
-// Update runs one entity tick inside the animation loop.
-// It executes movement logic, then optional collision handling.
-// This keeps each object behavior self-contained.
+// Update runs this entity's behavior for one frame.
+// First it moves (custom callback or default movement), then handles hits.
+// Collision handler runs only after collision lists were prepared by Animation.
 func (e *Entity) Update(anim *Animation) {
 	if e.Callback != nil {
 		e.Callback(e, anim)

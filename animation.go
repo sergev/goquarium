@@ -95,8 +95,9 @@ func (a *Animation) GetEntitiesByType(tp string) []*Entity {
 	return out
 }
 
-// updateSize reads terminal size and applies minimum checks.
-// The height is one row less to keep drawing safe at bottom.
+// updateSize refreshes width/height after startup or terminal resize.
+// We require a minimum size so large ASCII art does not break badly.
+// Height is stored as one row less to avoid bottom-row terminal glitches.
 func (a *Animation) updateSize() error {
 	w, h := a.screen.Size()
 	if h < 15 || w < 40 {
@@ -107,9 +108,9 @@ func (a *Animation) updateSize() error {
 	return nil
 }
 
-// checkCollisions computes rectangle overlap for physical entities.
-// Matching objects are stored in each entity's Collision list.
-// Handlers process these results during update.
+// checkCollisions finds overlaps using simple rectangle checks.
+// This is an O(n^2) pass, but it is easy to understand and fine here.
+// Results are saved on each entity for later collision handlers.
 func (a *Animation) checkCollisions() {
 	for _, e := range a.entities {
 		e.Collision = nil
@@ -156,9 +157,9 @@ func colorByName(name string) tcell.Color {
 	}
 }
 
-// drawEntity paints one entity on the current frame.
-// It handles clipping, transparency, and color-mask characters.
-// Only visible cells are sent to the terminal.
+// drawEntity paints one object frame onto the screen grid.
+// Shape and color masks are read line-by-line in parallel.
+// Mask letters/digits pick colors, while transparent cells are skipped.
 func (a *Animation) drawEntity(e *Entity) {
 	x, y, _ := e.Position()
 	lines := strings.Split(e.CurrentShape(), "\n")
@@ -195,9 +196,9 @@ func (a *Animation) drawEntity(e *Entity) {
 	}
 }
 
-// animate runs one full world update step.
-// It updates entities, checks collisions, removes dead ones, then draws.
-// This is called repeatedly by the main loop timer.
+// animate runs one full simulation step and then draws the frame.
+// We copy entity slices before loops so callbacks can add/remove safely.
+// Pass order is: update -> collisions -> death cleanup -> render.
 func (a *Animation) animate() {
 	now := time.Now()
 	for _, e := range append([]*Entity{}, a.entities...) {
@@ -249,9 +250,9 @@ func (a *Animation) drawInfoOverlay() {
 	a.screen.Show()
 }
 
-// Run starts terminal mode and processes the main loop.
-// It listens for keys, updates entities, and redraws frames.
-// The setup callback creates initial scene objects.
+// Run is the main state machine for the app.
+// It initializes terminal mode, runs setup, then loops on input and ticks.
+// Info mode pauses movement so overlay text stays easy to read.
 func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -270,6 +271,8 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 
 	eventCh := make(chan tcell.Event, 32)
 	go func() {
+		// PollEvent blocks, so we run it in a goroutine.
+		// Events are pushed to a channel for the main loop to consume.
 		for a.running {
 			eventCh <- a.screen.PollEvent()
 		}

@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-// AddShark spawns a shark and its teeth hitbox.
-// Shark moves across screen and can eat small fish.
+// AddShark creates two linked entities: shark art and teeth hitbox.
+// Keeping teeth separate makes collision checks simple and precise.
+// Shark death callback later removes teeth and starts next event.
 func AddShark(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`   __
@@ -107,8 +108,9 @@ yywwwyyyyyyyyyyyyyyyyyyyy
 	})
 }
 
-// AddWhale creates a whale with multi-frame spout animation.
-// Body and spout frames are combined to simulate blowing water.
+// AddWhale builds animation frames in code instead of hardcoding all frames.
+// We start with idle body frames, then append aligned spout variations.
+// Same color masks are reused while shape frames change over time.
 func AddWhale(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`        .-----:
@@ -239,8 +241,9 @@ func AddBigFish(_ *Entity, anim *Animation) {
 	})
 }
 
-// AddFishhook drops a hook setup: line, hook, and point.
-// Fish can collide with hook point and get reeled up.
+// AddFishhook creates a 3-part system: line, visible hook, and catch point.
+// All parts share the same callback mode so they move together.
+// Hook point is the physical part that fish collides with.
 func AddFishhook(_ *Entity, anim *Animation) {
 	x := 10 + rand.Intn(maxInt(1, anim.Width()-30))
 	yStart := -20
@@ -274,8 +277,9 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	})
 }
 
-// FishhookCallback controls hook lowering and retracting.
-// Mode in callback args decides direction of vertical movement.
+// FishhookCallback acts like a tiny state machine.
+// "lowering" moves down to max depth; "hooked" reels upward to top clamp.
+// This callback uses mode map args, unlike most entities' []float64 args.
 func FishhookCallback(entity *Entity, anim *Animation) bool {
 	mode := ""
 	switch args := entity.CallbackArgs.(type) {
@@ -311,8 +315,9 @@ func Retract(entity *Entity, _ *Animation) {
 	entity.CallbackArgs = map[string]string{"mode": "hooked"}
 }
 
-// GroupDeath removes linked entities by type.
-// After cleanup, it starts another random special event.
+// GroupDeath removes all entities of listed types from scene.
+// It is used for grouped cleanup (for example hook + line + point).
+// After cleanup, it chains into the next random event.
 func GroupDeath(entity *Entity, anim *Animation, boundTypes []string) {
 	for _, tp := range boundTypes {
 		for _, obj := range anim.GetEntitiesByType(tp) {
@@ -376,8 +381,9 @@ ygcgwwwww  ygcgwwwww  ygcgwwwww
 	})
 }
 
-// AddDolphins spawns three dolphins in a moving formation.
-// The leading dolphin owns respawn callback for next event.
+// AddDolphins spawns three dolphins with fixed spacing.
+// Only the lead dolphin has death callback to avoid triple respawns.
+// Followers are visual companions in the same formation.
 func AddDolphins(_ *Entity, anim *Animation) {
 	dir := rand.Intn(2)
 	speed := 2.0
@@ -464,8 +470,9 @@ func AddSwan(_ *Entity, anim *Animation) {
 	})
 }
 
-// RandomObject picks and spawns one random special event.
-// This keeps the scene varied over time.
+// RandomObject is the special-event router for this game.
+// Many death callbacks call this, so events form a continuous chain.
+// Random choice keeps the aquarium from repeating one pattern.
 func RandomObject(dead *Entity, anim *Animation) {
 	randomObjects := []func(*Entity, *Animation){
 		AddShip,

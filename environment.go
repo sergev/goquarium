@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
-// AddEnvironment draws repeating water lines near surface.
-// These lines act as visual water layers for bubbles and boats.
+// AddEnvironment draws repeated water bands near the surface.
+// They are also marked physical so bubbles can collide and pop there.
+// This gives both visuals and simple "surface" collision behavior.
 func AddEnvironment(anim *Animation) {
 	waterSegments := []string{
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -75,8 +76,9 @@ WWWWWWW WWWWW W W WWWWWWWWWWWWWW
 	})
 }
 
-// AddSeaweed creates one animated seaweed plant.
-// It wiggles by frame cycling and respawns after its lifetime ends.
+// AddSeaweed creates one seaweed with two alternating frames.
+// It does not move position; only frame index changes to fake swaying.
+// When lifetime ends, death callback spawns a replacement plant.
 func AddSeaweed(_ *Entity, anim *Animation) {
 	frames := []string{"", ""}
 	height := rand.Intn(4) + 3
@@ -108,8 +110,8 @@ func AddSeaweed(_ *Entity, anim *Animation) {
 	})
 }
 
-// AddAllSeaweed spawns many seaweed plants at startup.
-// Count scales with terminal width so scene feels balanced.
+// AddAllSeaweed seeds the initial seaweed population.
+// Count uses a simple width/15 density rule for balanced scenery.
 func AddAllSeaweed(anim *Animation) {
 	count := anim.Width() / 15
 	for i := 0; i < count; i++ {

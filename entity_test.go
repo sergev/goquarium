@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
-// TestEntityMoveFrame checks default movement math.
-// It also confirms frame index advances after enough frame time.
+// TestEntityMoveFrame checks default movement and frame progression.
+// Two updates are used because 0.6 + 0.6 crosses the frame threshold.
+// This protects the "frameStep >= 1" animation rule.
 func TestEntityMoveFrame(t *testing.T) {
 	e := NewEntity(NewEntityOptions{
 		Shape:        []string{"a", "b"},
@@ -34,8 +35,8 @@ func TestEntityShouldDie(t *testing.T) {
 	}
 }
 
-// TestCollisionDetection checks overlap collision logic.
-// Two close entities should appear in collision list.
+// TestCollisionDetection verifies rectangle overlap collision behavior.
+// This test protects the simple AABB rule used in checkCollisions.
 func TestCollisionDetection(t *testing.T) {
 	a := NewAnimation()
 	e1 := NewEntity(NewEntityOptions{Shape: "xx", Position: [3]int{1, 1, 1}, Physical: true})
@@ -63,8 +64,9 @@ func TestRandColor(t *testing.T) {
 	}
 }
 
-// TestSurfaceSpritesUseRealMultilineStrings guards sprite formatting.
-// It catches accidental literal "\\n" strings in surface sprites.
+// TestSurfaceSpritesUseRealMultilineStrings protects sprite text integrity.
+// Literal "\\n" would flatten art into one broken line on screen.
+// This regression test keeps surface animations readable.
 func TestSurfaceSpritesUseRealMultilineStrings(t *testing.T) {
 	anim := NewAnimation()
 	anim.width = 120

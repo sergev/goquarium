@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-// AddBubble spawns a bubble near a fish mouth.
-// Bubble side changes with fish swimming direction.
+// AddBubble creates one rising bubble from a fish.
+// CallbackArgs follow [dx, dy, dz, frameStep], so dy=-1 means "go up".
+// Bubble starts on fish mouth side based on fish horizontal direction.
 func AddBubble(fish *Entity, anim *Animation) {
 	cbArgs, _ := fish.CallbackArgs.([]float64)
 	fw, fh := fish.Size()
@@ -47,8 +48,9 @@ func FishCallback(fish *Entity, anim *Animation) bool {
 	return fish.MoveEntity(anim)
 }
 
-// FishCollision handles fish interactions with danger objects.
-// Fish can be eaten by sharks or caught by a hook.
+// FishCollision handles dangerous contacts for a fish.
+// Shark teeth can kill small fish; hook contact retracts multiple entities.
+// One collision may change state of fish, hook, line, and hook point together.
 func FishCollision(fish *Entity, anim *Animation) {
 	for _, obj := range fish.Collision {
 		if obj.EntityType == "teeth" {
@@ -74,8 +76,8 @@ func FishCollision(fish *Entity, anim *Animation) {
 	}
 }
 
-// AddSplat creates a short red splash animation.
-// It appears when a fish is eaten by a shark.
+// AddSplat creates a short visual burst when fish gets eaten.
+// DieFrame means "remove after enough frame steps," not wall-clock seconds.
 func AddSplat(anim *Animation, x, y, z int) {
 	frames := []string{
 		"\n\n   .\n  ***\n   '\n\n",
@@ -134,8 +136,9 @@ var newFishDesigns = []fishDesign{
 	}},
 }
 
-// randColor replaces number placeholders with random color letters.
-// This gives fish fresh color combinations every spawn.
+// randColor replaces numeric color placeholders in sprite masks.
+// Digits 1..9 are templates that become random color marker letters.
+// This keeps fish colors varied without changing shape art.
 func randColor(mask string) string {
 	colors := []string{"c", "C", "r", "R", "y", "Y", "b", "B", "g", "G", "m", "M"}
 	out := mask
@@ -145,8 +148,9 @@ func randColor(mask string) string {
 	return out
 }
 
-// AddFish creates one fish with random design and direction.
-// It chooses speed, depth, spawn side, and death respawn callback.
+// AddFish spawns one fish using mode rules and random design.
+// Direction chooses speed sign and which side of screen fish starts from.
+// Death callback respawns another fish, keeping population stable.
 func AddFish(_ *Entity, anim *Animation, classicMode bool) {
 	var design fishDesign
 	if classicMode || rand.Intn(12)+1 <= 8 {
@@ -192,8 +196,8 @@ func AddFish(_ *Entity, anim *Animation, classicMode bool) {
 	anim.AddEntity(fish)
 }
 
-// AddAllFish fills the aquarium with starter fish population.
-// Fish count depends on screen area so larger screens look alive.
+// AddAllFish creates initial fish count from screen area.
+// The /350 constant is a simple density tuning value.
 func AddAllFish(anim *Animation, classicMode bool) {
 	screenSize := (anim.Height() - 9) * anim.Width()
 	count := screenSize / 350
