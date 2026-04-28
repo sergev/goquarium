@@ -30,7 +30,7 @@ func TestEntityMoveFrame(t *testing.T) {
 func TestEntityShouldDie(t *testing.T) {
 	now := time.Now()
 	past := now.Add(-time.Second)
-	e := NewEntity(NewEntityOptions{Shape: "abc", DieTime: &past})
+	e := NewEntity(NewEntityOptions{Shape: []string{"abc"}, DieTime: &past})
 	if !e.ShouldDie(100, 100, now) {
 		t.Fatalf("expected entity to die by time")
 	}
@@ -40,8 +40,8 @@ func TestEntityShouldDie(t *testing.T) {
 // This test protects the simple AABB rule used in checkCollisions.
 func TestCollisionDetection(t *testing.T) {
 	a := NewAnimation()
-	e1 := NewEntity(NewEntityOptions{Shape: "xx", Position: [3]int{1, 1, 1}, Physical: true})
-	e2 := NewEntity(NewEntityOptions{Shape: "xx", Position: [3]int{2, 1, 1}})
+	e1 := NewEntity(NewEntityOptions{Shape: []string{"xx"}, Position: [3]int{1, 1, 1}, Physical: true})
+	e2 := NewEntity(NewEntityOptions{Shape: []string{"xx"}, Position: [3]int{2, 1, 1}})
 	a.entities = []*Entity{e1, e2}
 	a.checkCollisions()
 	if len(e1.Collision) == 0 {
@@ -139,6 +139,32 @@ func TestSeaMonsterSpritesParity(t *testing.T) {
 		}
 		if math.Abs(args[0]) != 2.0 || args[1] != 0 || args[2] != 0 || args[3] != 0.25 {
 			t.Fatalf("unexpected monster callback args: %#v", args)
+		}
+	}
+}
+
+// TestNewEntityShapeNotCorruptedByColorArg guards against a GC interaction bug
+// where the any-typed Shape interface value is collected during the evaluation of
+// the Color field (which triggers many heap allocations via randColor/rand.Intn).
+// Root cause: a partially-constructed NewEntityOptions literal is not yet a GC
+// root, so the heap copy of the Shape string can be freed before NewEntity reads
+// it.  Fix: pre-assign shape/color to named local variables before the struct
+// literal so they are stable, named roots when randColor runs.
+// Runs many iterations to give GC a chance to trigger the corruption if present.
+func TestNewEntityShapeNotCorruptedByColorArg(t *testing.T) {
+	const iterations = 500
+	for i := 0; i < iterations; i++ {
+		design := oldFishDesigns[i%len(oldFishDesigns)]
+		direction := i % 2
+		shapeVal := design.shape[direction]
+		colorVal := randColor(design.color[direction])
+		e := NewEntity(NewEntityOptions{
+			EntityType: "fish",
+			Shape:      []string{shapeVal},
+			Color:      []string{colorVal},
+		})
+		if got := e.CurrentShape(); got != shapeVal {
+			t.Fatalf("iter %d: NewEntity Shape corrupted: want %q, got %q", i, shapeVal, got)
 		}
 	}
 }
@@ -251,6 +277,46 @@ func TestFishhookVisualParity(t *testing.T) {
 	}
 }
 
+// TestAddFishAlwaysHasValidShape verifies every fish entity produced by AddFish
+// carries a non-empty Shape. It runs enough iterations to cover all 12 designs
+// (8 old + 4 new) × 2 directions in both classic and non-classic mode.
+func TestAddFishAlwaysHasValidShape(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 120
+	anim.height = 40
+
+	for _, classicMode := range []bool{false, true} {
+		const iterations = 200
+		for i := 0; i < iterations; i++ {
+			// Snapshot existing pointers so we can identify the newly added entity
+			// after AddEntity sorts by Z (the new fish may not be last in the slice).
+			before := make(map[*Entity]bool, len(anim.entities))
+			for _, e := range anim.entities {
+				before[e] = true
+			}
+			AddFish(nil, anim, classicMode)
+			var fish *Entity
+			for _, e := range anim.entities {
+				if !before[e] {
+					fish = e
+					break
+				}
+			}
+			if fish == nil {
+				t.Fatalf("classic=%v iter %d: AddFish added no new entity", classicMode, i)
+			}
+			if fish.EntityType != "fish" {
+				t.Fatalf("classic=%v iter %d: expected entity type \"fish\", got %q",
+					classicMode, i, fish.EntityType)
+			}
+			if shape := fish.CurrentShape(); shape == "" {
+				t.Fatalf("classic=%v iter %d: fish entity has empty Shape",
+					classicMode, i)
+			}
+		}
+	}
+}
+
 func TestReflowForResizePreservesDynamicAndRebuildsStatic(t *testing.T) {
 	anim := NewAnimation()
 	anim.width = 120
@@ -259,7 +325,7 @@ func TestReflowForResizePreservesDynamicAndRebuildsStatic(t *testing.T) {
 
 	fish := NewEntity(NewEntityOptions{
 		EntityType: "fish",
-		Shape:      "><>",
+		Shape:      []string{"><>"},
 		Position:   [3]int{8, 35, Depth["fish_start"]},
 	})
 	anim.AddEntity(fish)

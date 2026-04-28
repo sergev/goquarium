@@ -35,15 +35,15 @@ func AddShark(_ *Entity, anim *Animation) {
 	}
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "teeth",
-		Shape:        "*",
+		Shape:        []string{"*"},
 		Position:     [3]int{teethX, teethY, Depth["shark"] + 1},
 		CallbackArgs: []float64{speed, 0, 0},
 		Physical:     true,
 	})
 	anim.NewEntity(NewEntityOptions{
 		EntityType:    "shark",
-		Shape:         shapes[direction],
-		Color:         colors[direction],
+		Shape:         []string{shapes[direction]},
+		Color:         []string{colors[direction]},
 		AutoTrans:     true,
 		Position:      [3]int{x, y, Depth["shark"]},
 		DefaultColor:  "CYAN",
@@ -101,8 +101,8 @@ yywwwyyyyyyyyyyyyyyyyyyyy
 		x = anim.Width() - 2
 	}
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shapes[dir],
-		Color:         colors[dir],
+		Shape:         []string{shapes[dir]},
+		Color:         []string{colors[dir]},
 		AutoTrans:     true,
 		Position:      [3]int{x, 0, Depth["water_gap1"]},
 		DefaultColor:  "WHITE",
@@ -331,9 +331,11 @@ func addBigFish1(_ *Entity, anim *Animation) {
 	if minHeight > maxHeight {
 		y = maxHeight + rand.Intn(minHeight-maxHeight+1)
 	}
+	shapeFrames1 := []string{shapes[dir]}
+	colorFrames1 := []string{randColor(colors[dir])}
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shapes[dir],
-		Color:         randColor(colors[dir]),
+		Shape:         shapeFrames1,
+		Color:         colorFrames1,
 		AutoTrans:     true,
 		Position:      [3]int{x, y, Depth["shark"]},
 		CallbackArgs:  []float64{speed, 0, 0},
@@ -389,9 +391,11 @@ func addBigFish2(_ *Entity, anim *Animation) {
 	if minHeight > maxHeight {
 		y = maxHeight + rand.Intn(minHeight-maxHeight+1)
 	}
+	shapeFrames2 := []string{shapes[dir]}
+	colorFrames2 := []string{randColor(colors[dir])}
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shapes[dir],
-		Color:         randColor(colors[dir]),
+		Shape:         shapeFrames2,
+		Color:         colorFrames2,
 		AutoTrans:     true,
 		Position:      [3]int{x, y, Depth["shark"]},
 		CallbackArgs:  []float64{speed, 0, 0},
@@ -410,7 +414,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	yLine := yStart - 50
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "fishline",
-		Shape:        strings.Repeat("|\n", 50) + strings.Repeat(" \n", 6),
+		Shape:        []string{strings.Repeat("|\n", 50) + strings.Repeat(" \n", 6)},
 		Position:     [3]int{x + 7, yLine, Depth["water_line1"]},
 		AutoTrans:    true,
 		Callback:     FishhookCallback,
@@ -418,7 +422,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	})
 	anim.NewEntity(NewEntityOptions{
 		EntityType:    "fishhook",
-		Shape:         "       o\n      ||\n      ||\n/ \\   ||\n  \\__//\n  `--'",
+		Shape:         []string{"       o\n      ||\n      ||\n/ \\   ||\n  \\__//\n  `--'"},
 		Position:      [3]int{x, yStart, Depth["water_line1"]},
 		AutoTrans:     true,
 		DieOffscreen:  true,
@@ -429,7 +433,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	})
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "hook_point",
-		Shape:        ".\n \n\\\n ",
+		Shape:        []string{".\n \n\\\n "},
 		Position:     [3]int{x + 1, yStart + 2, Depth["shark"] + 1},
 		Physical:     true,
 		DefaultColor: "GREEN",
@@ -532,7 +536,7 @@ ygcgwwwww  ygcgwwwww  ygcgwwwww
 	}
 	anim.NewEntity(NewEntityOptions{
 		Shape:         shapes[dir],
-		Color:         colors[dir],
+		Color:         []string{colors[dir]},
 		AutoTrans:     true,
 		Position:      [3]int{x, 5, Depth["water_gap3"]},
 		CallbackArgs:  []float64{speed, 0, 0, 0.25},
@@ -582,7 +586,7 @@ func AddDolphins(_ *Entity, anim *Animation) {
 		}
 		anim.NewEntity(NewEntityOptions{
 			Shape:     shapes[dir],
-			Color:     colors[dir],
+			Color:     []string{colors[dir]},
 			AutoTrans: true,
 			Position:  [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
 			CallbackArgs: []float64{
@@ -626,8 +630,8 @@ func AddSwan(_ *Entity, anim *Animation) {
 		x = anim.Width() - 2
 	}
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shapes[dir],
-		Color:         colors[dir],
+		Shape:         []string{shapes[dir]},
+		Color:         []string{colors[dir]},
 		AutoTrans:     true,
 		Position:      [3]int{x, 1, Depth["water_gap3"]},
 		CallbackArgs:  []float64{speed, 0, 0, 0.25},

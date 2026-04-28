@@ -220,10 +220,12 @@ func AddFish(_ *Entity, anim *Animation, classicMode bool) {
 		speed *= -1
 	}
 	depth := Depth["fish_start"] + rand.Intn(Depth["fish_end"]-Depth["fish_start"]+1)
+	shapeFrames := []string{design.shape[direction]}
+	colorFrames := []string{randColor(design.color[direction])}
 	fish := NewEntity(NewEntityOptions{
 		EntityType:    "fish",
-		Shape:         design.shape[direction],
-		Color:         randColor(design.color[direction]),
+		Shape:         shapeFrames,
+		Color:         colorFrames,
 		AutoTrans:     true,
 		Position:      [3]int{0, 0, depth},
 		Callback:      FishCallback,

@@ -333,24 +333,12 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 	a.running = true
 	setup(a, classic)
 
-	eventCh := make(chan tcell.Event, 32)
-	go func() {
-		// PollEvent blocks, so we run it in a goroutine.
-		// Events are pushed to a channel for the main loop to consume.
-		for a.running {
-			eventCh <- a.screen.PollEvent()
-		}
-	}()
-	tick := time.NewTicker(100 * time.Millisecond)
-	defer tick.Stop()
-
 	paused := false
 	showingInfo := false
 
 	for a.running {
-		select {
-		case ev := <-eventCh:
-			switch tev := ev.(type) {
+		for a.screen.HasPendingEvent() {
+			switch tev := a.screen.PollEvent().(type) {
 			case *tcell.EventResize:
 				a.screen.Sync()
 				if err := a.updateSize(); err != nil {
@@ -366,9 +354,7 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 				if tev.Key() == tcell.KeyEscape && showingInfo {
 					showingInfo = false
 					paused = false
-					continue
-				}
-				if tev.Key() == tcell.KeyRune {
+				} else if tev.Key() == tcell.KeyRune {
 					switch tev.Rune() {
 					case 'q', 'Q':
 						a.running = false
@@ -390,15 +376,13 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 					}
 				}
 			}
-		case <-tick.C:
-			if showingInfo {
-				a.drawInfoOverlay()
-				continue
-			}
-			if !paused {
-				a.animate()
-			}
 		}
+		if showingInfo {
+			a.drawInfoOverlay()
+		} else if !paused {
+			a.animate()
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	return nil
 }

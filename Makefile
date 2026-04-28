@@ -11,7 +11,7 @@ all:
 
 install: all
 	@install -d $(DESTDIR)/usr/bin
-	install -m 555 ${PROG} $(DESTDIR)/usr/bin/${PROG}
+	install -m 555 ${PROG} $(DESTDIR)/bin/${PROG}
 
 uninstall:
 	rm -f $(DESTDIR)/bin/${PROG}

@@ -29,7 +29,7 @@ func AddEnvironment(anim *Animation) {
 		anim.NewEntity(NewEntityOptions{
 			Name:         fmt.Sprintf("water_seg_%d", i),
 			EntityType:   "waterline",
-			Shape:        tiled,
+			Shape:        []string{tiled},
 			Position:     [3]int{0, i + 5, depth},
 			DefaultColor: "CYAN",
 			Physical:     true,
@@ -70,8 +70,8 @@ WWWWWWW WWWWW W W WWWWWWWWWWWWWW
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "castle",
 		Name:         "castle",
-		Shape:        castleShape,
-		Color:        castleColor,
+		Shape:        []string{castleShape},
+		Color:        []string{castleColor},
 		Position:     [3]int{anim.Width() - 32, anim.Height() - 13, Depth["castle"]},
 		DefaultColor: "BLACK",
 	})

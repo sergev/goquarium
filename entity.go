@@ -54,13 +54,14 @@ type Entity struct {
 }
 
 // NewEntityOptions is the input bundle used by NewEntity.
-// Shape/Color can be string (single frame) or []string (animated frames).
+// Shape holds one or more animation frames; Color holds matching color masks.
+// Single-frame entities pass a one-element slice; animated entities pass more.
 // CallbackArgs can be []float64 movement data or a custom mode map.
 type NewEntityOptions struct {
 	Name          string
 	EntityType    string
-	Shape         any
-	Color         any
+	Shape         []string
+	Color         []string
 	Position      [3]int
 	Callback      EntityCallback
 	CallbackArgs  any
@@ -81,8 +82,8 @@ func NewEntity(opts NewEntityOptions) *Entity {
 	e := &Entity{
 		Name:          opts.Name,
 		EntityType:    opts.EntityType,
-		Shapes:        asFrameSlice(opts.Shape),
-		Colors:        asFrameSlice(opts.Color),
+		Shapes:        opts.Shape,
+		Colors:        opts.Color,
 		X:             float64(opts.Position[0]),
 		Y:             float64(opts.Position[1]),
 		Z:             float64(opts.Position[2]),
@@ -115,25 +116,6 @@ func NewEntity(opts NewEntityOptions) *Entity {
 	return e
 }
 
-// asFrameSlice converts a shape/color input into []string frames.
-// It supports nil, single string, or already prepared slices.
-// Unknown input falls back to an empty frame safely.
-func asFrameSlice(v any) []string {
-	switch t := v.(type) {
-	case nil:
-		return nil
-	case string:
-		return []string{strings.ReplaceAll(t, "?", " ")}
-	case []string:
-		out := make([]string, 0, len(t))
-		for _, s := range t {
-			out = append(out, strings.ReplaceAll(s, "?", " "))
-		}
-		return out
-	default:
-		return []string{""}
-	}
-}
 
 // updateDimensions recalculates current frame width and height.
 // The renderer and collision checks use these values every frame.
