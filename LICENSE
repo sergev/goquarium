@@ -633,7 +633,7 @@ the "copyright" line and a pointer to where the full notice is found.
     Asciiquarium - An aquarium/sea animation in ASCII art for your terminal
 
     Copyright (C) 2025 Mohammad Abu Mattar <info@mkabumattar.com>
-    
+
     Based on the original ASCIIQuarium Perl script by Kirk Baucom
 
     This program is free software: you can redistribute it and/or modify
@@ -655,7 +655,7 @@ Also add information on how to contact you by electronic and paper mail.
 notice like this when it starts in an interactive mode:
 
     Asciiquarium version 2.0.0, Copyright (C) 2025 Mohammad Abu Mattar
-    
+
     This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE file.
     This is free software, and you are welcome to redistribute it
     under certain conditions; see LICENSE file for details.
@@ -674,11 +674,16 @@ Python Port:
     Website: https://mkabumattar.com/
     Repository: https://github.com/MKAbuMattar/asciiquarium-python
 
-This Python implementation is a derivative work based on the original
-Perl ASCIIQuarium script. All ASCII art designs and animation concepts
-are credited to the original author, Kirk Baucom.
+Go Port:
+    Copyright (C) 2026 Serge Vakulenko
+    https://github.com/sergev/goquarium
 
-The Python port uses the GPL-3.0-or-later license to ensure maximum
+This Go implementation is based on the Python port, which is itself a
+derivative work based on the original Perl ASCIIQuarium script. All
+ASCII art designs and animation concepts are credited to the original
+author, Kirk Baucom.
+
+The Go port uses the GPL-3.0-or-later license to ensure maximum
 freedom for users while honoring the spirit of the original open-source
 project.
 
