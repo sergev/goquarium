@@ -33,7 +33,7 @@ func InfoLines() []string {
 	return []string{
 		"╔═══════════════════════════════════════════════════════════════════════╗",
 		"║                                                                       ║",
-		fmt.Sprintf("║   Asciiquarium %s - ASCII Art Aquarium Animation                      ║", Version),
+		fmt.Sprintf("║         Asciiquarium %s - ASCII Art Aquarium Animation          ║", Version),
 		"║                                                                       ║",
 		"╚═══════════════════════════════════════════════════════════════════════╝",
 		"",

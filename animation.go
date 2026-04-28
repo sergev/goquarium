@@ -257,6 +257,35 @@ func (a *Animation) animate() {
 	a.drawFrame()
 }
 
+// infoStyleFor returns a structured text style for one info-overlay rune.
+// It keeps colors consistent across header, controls, and hint lines.
+func infoStyleFor(lineIdx int, line string, ch rune) tcell.Style {
+	base := tcell.StyleDefault.Foreground(tcell.ColorWhite)
+	if ch == ' ' {
+		return base
+	}
+
+	// Box frame and header lines use an accent color.
+	if lineIdx <= 4 {
+		if strings.ContainsRune("╔═╗║╚╝", ch) {
+			return base.Foreground(tcell.ColorTeal)
+		}
+		return base.Foreground(tcell.ColorWhite)
+	}
+
+	// Controls line highlights control keys and ESC.
+	if strings.Contains(line, "Q/q quit") {
+		return base.Foreground(tcell.ColorGreen)
+	}
+
+	// Final hint line uses a secondary accent and emphasizes key names.
+	if strings.Contains(line, "Press I or ESC") {
+		return base.Foreground(tcell.ColorDarkMagenta)
+	}
+
+	return base
+}
+
 // drawInfoOverlay shows help text over the aquarium.
 // It centers lines on screen so controls are easy to read.
 func (a *Animation) drawInfoOverlay() {
@@ -279,7 +308,7 @@ func (a *Animation) drawInfoOverlay() {
 			if x+ci >= a.width {
 				break
 			}
-			a.screen.SetContent(x+ci, y, ch, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+			a.screen.SetContent(x+ci, y, ch, nil, infoStyleFor(i, ln, ch))
 		}
 	}
 	a.screen.Show()
