@@ -10,36 +10,40 @@ import (
 // Shark death callback later removes teeth and starts next event.
 func AddShark(_ *Entity, anim *Animation) {
 	shapes := [2]string{
-		`   __
-__/o )>`,
-		`< ( o\__
-    __`,
+		"                              __\n                             ( `\\\n  ,                          )   `\\\n;' `.                       (     `\\__\n ;   `.             __..---''          `~~~~-._\n  `.   `.____...--''                       (b  `--._\n    >                     _.-'      .((      ._     )\n  .`.-`--...__         .-'     -.___.....-(|/|/|/|/'\n ;.'         `. ...----`.___.',,,_______......---'\n '           '-'",
+		"                     __\n                    /' )\n                  /'   (                          ,\n              __/'     )                       .' `;\n      _.-~~~~'          ``---..__             .'   ;\n _.--'  b)                       ``--...____.'   .'\n(     _.      )).      `-._                     <\n `\\|\\|\\|\\|)-.....___.-     `-.         __...--'-.'.\n   `---......_______,,,`.___.'----... .'         `.;\n                                     `-`           `",
+	}
+	colors := [2]string{
+		"\n\n\n\n\n                                           cR\n \n                                          cWWWWWWWW\n\n\n",
+		"\n\n\n\n        Rc\n\n  WWWWWWWWc\n\n\n\n",
 	}
 	direction := rand.Intn(2)
+	x := -53
+	y := 9
+	teethX := -9
+	teethY := y + 7
 	speed := 2.0
-	x := -8
+	if anim.Height() > 19 {
+		// Mirror upstream placement to keep sharks in deeper water.
+		y = 9 + rand.Intn(maxInt(1, anim.Height()-19)+1)
+		teethY = y + 7
+	}
 	if direction == 1 {
 		speed = -2.0
 		x = anim.Width() - 2
-	}
-	y := 9
-	if anim.Height() > 19 {
-		y = 9 + rand.Intn(anim.Height()-18)
-	}
-	teethX := x + 2
-	if direction == 1 {
-		teethX = x - 1
+		teethX = x + 9
 	}
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "teeth",
 		Shape:        "*",
-		Position:     [3]int{teethX, y + 1, Depth["shark"] + 1},
+		Position:     [3]int{teethX, teethY, Depth["shark"] + 1},
 		CallbackArgs: []float64{speed, 0, 0},
 		Physical:     true,
 	})
 	anim.NewEntity(NewEntityOptions{
 		EntityType:    "shark",
 		Shape:         shapes[direction],
+		Color:         colors[direction],
 		AutoTrans:     true,
 		Position:      [3]int{x, y, Depth["shark"]},
 		DefaultColor:  "CYAN",
@@ -184,23 +188,82 @@ BBBB          BBBBB`,
 }
 
 // AddMonster spawns a sea monster crossing the screen.
-// It is a large special event creature in deeper layer.
-func AddMonster(_ *Entity, anim *Animation) {
-	shapes := [2]string{
-		` _a_a
-/ oo\____`,
-		`____/oo \
- a_a_`,
+// It picks between the newer and classic animated monster designs.
+func AddMonster(old *Entity, anim *Animation) {
+	if rand.Intn(2) == 0 {
+		addNewMonster(old, anim)
+		return
+	}
+	addOldMonster(old, anim)
+}
+
+// addNewMonster creates the larger modern monster variant.
+// It uses two animation frames and keeps the eye highlight mask.
+func addNewMonster(_ *Entity, anim *Animation) {
+	shapes := [2][]string{
+		{
+			"\n         _   _                   _   _       _a_a\n       _{.`=`.}_     _   _     _{.`=`.}_    {/ ''\\_\n _    {.'  _  '.}   {.`'`.}   {.'  _  '.}  {|  ._oo)\n{ \\  {/  .'~'.  \\}  {/ .-. \\}  {/  .'~'.  \\} {/  |",
+			"\n                      _   _                    _a_a\n  _      _   _     _{.`=`.}_     _   _      {/ ''\\_\n { \\    {.`'`.}   {.'  _  '.}   {.`'`.}    {|  ._oo)\n  \\ \\  {/ .-. \\}  {/  .'~'.  \\}  {/ .-. \\}   {/  |",
+		},
+		{
+			"\n   a_a_       _   _                   _   _\n _/'' \\}    _{.`=`.}_     _   _     _{.`=`.}_\n(oo_.  |}  {.'  _  '.}   {.`'`.}   {.'  _  '.}    _\n    |  \\} {/  .'~'.  \\}  {/ .-. \\}  {/  .'~'.  \\}  / }",
+			"\n   a_a_                    _   _\n _/'' \\}      _   _     _{.`=`.}_     _   _      _\n(oo_.  |}    {.`'`.}   {.'  _  '.}   {.`'`.}    / }\n    |  \\}   {/ .-. \\}  {/  .'~'.  \\}  {/ .-. \\}  / /",
+		},
+	}
+	colors := [2]string{
+		"\n                                                W W\n\n\n\n",
+		"\n   W W\n\n\n\n",
 	}
 	dir := rand.Intn(2)
 	speed := 2.0
-	x := -10
+	x := -54
 	if dir == 1 {
-		speed = -2
+		speed = -2.0
 		x = anim.Width() - 2
 	}
 	anim.NewEntity(NewEntityOptions{
 		Shape:         shapes[dir],
+		Color:         []string{colors[dir], colors[dir]},
+		AutoTrans:     true,
+		Position:      [3]int{x, 2, Depth["water_gap2"]},
+		CallbackArgs:  []float64{speed, 0, 0, 0.25},
+		DeathCallback: RandomObject,
+		DieOffscreen:  true,
+		DefaultColor:  "GREEN",
+	})
+}
+
+// addOldMonster creates the classic sea monster variant.
+// This one uses four animation frames for the body wake motion.
+func addOldMonster(_ *Entity, anim *Animation) {
+	shapes := [2][]string{
+		{
+			"\n                                                          ____\n            __                                          /   o  \\\n          /    \\        _                     _       /     ____ >\n  _      |  __  |     /   \\        _        /   \\   |     |\n | \\     |  ||  |    |     |     /   \\    |     |  |     |",
+			"\n                                                          ____\n                                             __         /   o  \\\n             _                     _       /    \\     /     ____ >\n   _       /   \\        _        /   \\   |  __  |   |     |\n  | \\     |     |     /   \\    |     |  |  ||  |   |     |",
+			"\n                                                          ____\n                                  __                  /   o  \\\n _                      _       /    \\        _     /     ____ >\n| \\          _        /   \\   |  __  |     /   \\  |     |\n \\ \\       /   \\    |     |  |  ||  |    |     | |     |",
+			"\n                                                          ____\n                       __                             /   o  \\\n  _          _       /    \\        _                /     ____ >\n | \\       /   \\   |  __  |     /   \\        _    |     |\n  \\ \\     |     |  |  ||  |    |     |     /   \\  |     |",
+		},
+		{
+			"\n    ____\n  /  o   \\                                          __\n< ____     \\       _                     _        /    \\\n      |     |   /   \\        _        /   \\     |  __  |      _\n      |     |  |     |     /   \\    |     |    |  ||  |     / |",
+			"\n    ____\n  /  o   \\         __\n< ____     \\     /    \\       _                     _\n      |     |   |  __  |    /   \\        _        /   \\       _\n      |     |   |  ||  |   |     |     /   \\     |     |     / |",
+			"\n    ____\n  /  o   \\                  __\n< ____     \\     _        /    \\       _                      _\n      |     |  /   \\     |  __  |   /   \\        _          / |\n      |     | |     |    |  ||  |  |     |    /   \\       / /",
+			"\n    ____\n  /  o   \\                             __\n< ____     \\                _        /    \\       _          _\n      |     |    _        /   \\     |  __  |   /   \\       / |\n      |     |  /   \\    |     |    |  ||  |  |     |     / /",
+		},
+	}
+	colors := [2]string{
+		"\n\n                                                            W\n\n\n",
+		"\n\n     W\n\n\n",
+	}
+	dir := rand.Intn(2)
+	speed := 2.0
+	x := -64
+	if dir == 1 {
+		speed = -2.0
+		x = anim.Width() - 2
+	}
+	anim.NewEntity(NewEntityOptions{
+		Shape:         shapes[dir],
+		Color:         []string{colors[dir], colors[dir], colors[dir], colors[dir]},
 		AutoTrans:     true,
 		Position:      [3]int{x, 2, Depth["water_gap2"]},
 		CallbackArgs:  []float64{speed, 0, 0, 0.25},
@@ -211,27 +274,124 @@ func AddMonster(_ *Entity, anim *Animation) {
 }
 
 // AddBigFish creates a larger fast fish variant.
-// It appears as a random special object.
+// It keeps upstream weighting: design2 appears 2/3 of the time.
 func AddBigFish(_ *Entity, anim *Animation) {
+	if rand.Intn(3) > 0 {
+		addBigFish2(nil, anim)
+		return
+	}
+	addBigFish1(nil, anim)
+}
+
+func addBigFish1(_ *Entity, anim *Animation) {
 	shapes := [2]string{
-		` __
-<` + "`" + `)))><`,
-		`><(((´>
-  __`,
+		" ______\n`\"\".  `````-----.....__\n     `.  .      .       `-.\n       :     .     .       `.\n ,     :   .    .          _ :\n: `.   :                  (@) `._\n `. `..'     .     =`-.       .__)\n   ;     .        =  ~  :     .-\"\n .' .'`.   .    .  =.-'  `._ .'\n: .'   :               .   .'\n '   .'  .    .     .   .-'\n   .'____....----''.'=.'\n   \"\"             .'.'\n               ''\"'`",
+		"                           ______\n          __.....-----'''''  .-\"\"'\n       .-'       .      .  .'\n     .'       .     .     :\n    : _          .    .   :     ,\n _.' (@)                  :   .' :\n(__.       .-'=     .     `..' .'\n \"-.     :  ~  =        .     ;\n   `. _.'  `-.=  .    .   .'`. `.\n     `.   .               :   `. :\n       `-.   .     .    .  `.   `\n          `.=`.``----....____`.\n            `.`.             \"\"\n              '`\"``",
+	}
+	colors := [2]string{
+		` 111111
+11111  11111111111111111
+     11  2      2       111
+       1     2     2       11
+ 1     1   2    2          1 1
+1 11   1                  1W1 111
+ 11 1111     2     1111       1111
+   1     2        1  1  1     111
+ 11 1111   2    2  1111  111 11
+1 11   1               2   11
+ 1   11  2    2     2   111
+   111111111111111111111
+   11             1111
+               11111`,
+		`                           111111
+          11111111111111111  11111
+       111       2      2  11
+     11       2     2     1
+    1 1          2    2   1     1
+ 111 1W1                  1   11 1
+1111       1111     2     1111 11
+ 111     1  1  1        2     1
+   11 111  1111  2    2   1111 11
+     11   2               1   11 1
+       111   2     2    2  11   1
+          111111111111111111111
+            1111             11
+              11111`,
+	}
+	dir := rand.Intn(2)
+	speed := 3.0
+	x := -34
+	if dir == 1 {
+		speed = -3.0
+		x = anim.Width() - 1
+	}
+	maxHeight := 9
+	minHeight := anim.Height() - 15
+	y := maxHeight
+	if minHeight > maxHeight {
+		y = maxHeight + rand.Intn(minHeight-maxHeight+1)
+	}
+	anim.NewEntity(NewEntityOptions{
+		Shape:         shapes[dir],
+		Color:         randColor(colors[dir]),
+		AutoTrans:     true,
+		Position:      [3]int{x, y, Depth["shark"]},
+		CallbackArgs:  []float64{speed, 0, 0},
+		DeathCallback: RandomObject,
+		DieOffscreen:  true,
+		DefaultColor:  "YELLOW",
+	})
+}
+
+func addBigFish2(_ *Entity, anim *Animation) {
+	shapes := [2]string{
+		"                _ _ _\n             .='\\ \\ \\`\"=,\n           .'\\ \\ \\ \\ \\ \\ \\\n\\'=._     / \\ \\ \\_\\_\\_\\_\\_\\\n\\'=._'.  /\\ \\,-\"`- _ - _ - '-.\n  \\`=._\\|'.\\/- _ - _ - _ - _- \\\n  ;\"= ._\\=./_ -_ -_ {`\"=_    @ \\\n   ;=\"_-_=- _ -  _ - {\"=_\"-     \\\n   ;_=_--_.,          {_.='   .-/\n  ;.=\"` / ';\\        _.     _.-`\n  /_.='/ \\/ /;._ _ _{.-;`/\"\n/._=_.'   '/ / / / /{.= /\n/.='       `'./_/_.=`{_/",
+		"            _ _ _\n        ,=\"`/ / /'=. \n       / / / / / / /'.\n      /_/_/_/_/_/ / / \\     _.='/\n   .-' - _ - _ -`\"-,/ /\\  .'_.='/\n  / -_ - _ - _ - _ -\\/.'|/_.=`/\n / @    _=\"`} _- _- _\\.=/_. =\";\n/     -\"_=\"}  - _  - _ -=_-_\"=;\n\\-.   '=._}          ,._--_=_; \n `-._     ._        /;' \\ `\"=.;\n     `\"\\`;-.}_ _ _.;\\ \\/ \\'=._\\\n        \\ =.}\\ \\ \\ \\ \\'   '._=_.\\\n         \\_}`=._\\_\\.'`       '=.\\",
+	}
+	colors := [2]string{
+		`                1 1 1
+             1111 1 11111
+           111 1 1 1 1 1 1
+11111     1 1 1 11111111111
+1111111  11 111112 2 2 2 2 111
+  111111111112 2 2 2 2 2 2 22 1
+  111 1111 12 22 22 11111    W 1
+   11111112 2 2  2 2 111111     1
+   111111111          11111   111
+  11111 11111        11     1111
+  111111 11 1111 1 111111111
+1111111   11 1 1 1 1111 1
+1111       1111111111111`,
+		`            1 1 1
+        11111 1 1111
+       1 1 1 1 1 1 111
+      11111111111 1 1 1     11111
+   111 2 2 2 2 211111 11  1111111
+  1 22 2 2 2 2 2 2 211111111111
+ 1 W    11111 22 22 2111111 111
+1     111111 2 2  2 2 21111111
+111   11111          111111111
+ 1111     11        111 1 11111
+     111111111 1 1111 11 111111
+        1 1111 1 1 1 11   1111111
+         1111111111111       1111`,
 	}
 	dir := rand.Intn(2)
 	speed := 2.5
-	x := -8
+	x := -33
 	if dir == 1 {
 		speed = -2.5
 		x = anim.Width() - 1
 	}
-	y := 9
-	if anim.Height()-14 > 9 {
-		y = 9 + rand.Intn(anim.Height()-14-9+1)
+	maxHeight := 9
+	minHeight := anim.Height() - 14
+	y := maxHeight
+	if minHeight > maxHeight {
+		y = maxHeight + rand.Intn(minHeight-maxHeight+1)
 	}
 	anim.NewEntity(NewEntityOptions{
 		Shape:         shapes[dir],
+		Color:         randColor(colors[dir]),
 		AutoTrans:     true,
 		Position:      [3]int{x, y, Depth["shark"]},
 		CallbackArgs:  []float64{speed, 0, 0},
@@ -247,17 +407,18 @@ func AddBigFish(_ *Entity, anim *Animation) {
 func AddFishhook(_ *Entity, anim *Animation) {
 	x := 10 + rand.Intn(maxInt(1, anim.Width()-30))
 	yStart := -20
+	yLine := yStart - 50
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "fishline",
-		Shape:        "|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n",
-		Position:     [3]int{x + 7, yStart - 10, Depth["water_line1"]},
+		Shape:        strings.Repeat("|\n", 50) + strings.Repeat(" \n", 6),
+		Position:     [3]int{x + 7, yLine, Depth["water_line1"]},
 		AutoTrans:    true,
 		Callback:     FishhookCallback,
 		CallbackArgs: map[string]string{"mode": "lowering"},
 	})
 	anim.NewEntity(NewEntityOptions{
 		EntityType:    "fishhook",
-		Shape:         "o\n||\n\\\\//",
+		Shape:         "       o\n      ||\n      ||\n/ \\   ||\n  \\__//\n  `--'",
 		Position:      [3]int{x, yStart, Depth["water_line1"]},
 		AutoTrans:     true,
 		DieOffscreen:  true,
@@ -410,6 +571,12 @@ func AddDolphins(_ *Entity, anim *Animation) {
 	}
 	for i := 0; i < 3; i++ {
 		deathCb := EntityDeathHandler(nil)
+		defaultColor := "CYAN"
+		if i == 0 {
+			defaultColor = "BLUE"
+		} else if i == 1 {
+			defaultColor = "BLUE"
+		}
 		if i == 0 {
 			deathCb = func(_ *Entity, a *Animation) { RandomObject(nil, a) }
 		}
@@ -423,7 +590,7 @@ func AddDolphins(_ *Entity, anim *Animation) {
 			},
 			DeathCallback: deathCb,
 			DieOffscreen:  true,
-			DefaultColor:  "CYAN",
+			DefaultColor:  defaultColor,
 		})
 	}
 }
