@@ -196,6 +196,47 @@ func (a *Animation) drawEntity(e *Entity) {
 	}
 }
 
+// drawFrame renders current entities without advancing simulation state.
+// This is used for immediate redraw requests like terminal resize.
+func (a *Animation) drawFrame() {
+	a.screen.Clear()
+	sorted := append([]*Entity{}, a.entities...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Z > sorted[j].Z })
+	for _, e := range sorted {
+		a.drawEntity(e)
+	}
+	a.screen.Show()
+}
+
+// reflowForResize rebuilds size-dependent static scenery and keeps dynamic entities.
+// It also clamps preserved entity Y positions into the drawable vertical range.
+func (a *Animation) reflowForResize() {
+	preserved := make([]*Entity, 0, len(a.entities))
+	for _, e := range a.entities {
+		switch e.EntityType {
+		case "waterline", "castle", "seaweed":
+			continue
+		default:
+			_, eh := e.Size()
+			maxY := a.height - eh
+			if maxY < 0 {
+				maxY = 0
+			}
+			if e.Y < 0 {
+				e.Y = 0
+			}
+			if e.Y > float64(maxY) {
+				e.Y = float64(maxY)
+			}
+			preserved = append(preserved, e)
+		}
+	}
+	a.entities = preserved
+	AddEnvironment(a)
+	AddCastle(a)
+	AddAllSeaweed(a)
+}
+
 // animate runs one full simulation step and then draws the frame.
 // We copy entity slices before loops so callbacks can add/remove safely.
 // Pass order is: update -> collisions -> death cleanup -> render.
@@ -213,13 +254,7 @@ func (a *Animation) animate() {
 			a.DelEntity(e)
 		}
 	}
-	a.screen.Clear()
-	sorted := append([]*Entity{}, a.entities...)
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Z > sorted[j].Z })
-	for _, e := range sorted {
-		a.drawEntity(e)
-	}
-	a.screen.Show()
+	a.drawFrame()
 }
 
 // drawInfoOverlay shows help text over the aquarium.
@@ -292,8 +327,11 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 				if err := a.updateSize(); err != nil {
 					return err
 				}
+				a.reflowForResize()
 				if showingInfo {
 					a.drawInfoOverlay()
+				} else {
+					a.drawFrame()
 				}
 			case *tcell.EventKey:
 				if tev.Key() == tcell.KeyEscape && showingInfo {

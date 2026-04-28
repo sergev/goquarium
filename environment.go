@@ -68,6 +68,7 @@ WWWWWWW WWWWW W W WWWWWWWWWWWWWW
  W  W   W W W W W W  W  W   WWW
  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW`
 	anim.NewEntity(NewEntityOptions{
+		EntityType:   "castle",
 		Name:         "castle",
 		Shape:        castleShape,
 		Color:        castleColor,
@@ -101,6 +102,7 @@ func AddSeaweed(_ *Entity, anim *Animation) {
 	life := time.Now().Add(time.Duration(8*60+rand.Intn(4*60)) * time.Second)
 	anim.NewEntity(NewEntityOptions{
 		Name:          fmt.Sprintf("seaweed_%f", rand.Float64()),
+		EntityType:    "seaweed",
 		Shape:         frames,
 		Position:      [3]int{x, y, Depth["seaweed"]},
 		CallbackArgs:  []float64{0, 0, 0, speed},

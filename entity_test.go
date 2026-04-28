@@ -250,3 +250,60 @@ func TestFishhookVisualParity(t *testing.T) {
 		t.Fatalf("expected long fishline with at least 50 pipe segments")
 	}
 }
+
+func TestReflowForResizePreservesDynamicAndRebuildsStatic(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 120
+	anim.height = 40
+	SetupAquarium(anim, false)
+
+	fish := NewEntity(NewEntityOptions{
+		EntityType: "fish",
+		Shape:      "><>",
+		Position:   [3]int{8, 35, Depth["fish_start"]},
+	})
+	anim.AddEntity(fish)
+
+	anim.width = 80
+	anim.height = 25
+	anim.reflowForResize()
+
+	var castle *Entity
+	waterCount := 0
+	seaweedCount := 0
+	foundFish := false
+	for _, e := range anim.entities {
+		switch e.EntityType {
+		case "castle":
+			castle = e
+		case "waterline":
+			waterCount++
+		case "seaweed":
+			seaweedCount++
+		}
+		if e == fish {
+			foundFish = true
+			// fish is preserved and clamped vertically into new bounds
+			if gotMax := anim.Height() - 1; int(e.Y) > gotMax {
+				t.Fatalf("expected preserved fish Y <= %d, got %v", gotMax, e.Y)
+			}
+		}
+	}
+	if !foundFish {
+		t.Fatalf("expected dynamic fish to be preserved across reflow")
+	}
+
+	if castle == nil {
+		t.Fatalf("expected castle entity after resize reflow")
+	}
+	cx, cy, _ := castle.Position()
+	if cx != anim.Width()-32 || cy != anim.Height()-13 {
+		t.Fatalf("unexpected castle position after reflow: got (%d,%d), want (%d,%d)", cx, cy, anim.Width()-32, anim.Height()-13)
+	}
+	if waterCount != 4 {
+		t.Fatalf("expected 4 waterline entities after reflow, got %d", waterCount)
+	}
+	if seaweedCount != anim.Width()/15 {
+		t.Fatalf("unexpected seaweed count after reflow: got %d, want %d", seaweedCount, anim.Width()/15)
+	}
+}
