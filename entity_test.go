@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -50,6 +51,34 @@ func TestRandColor(t *testing.T) {
 		case 'c', 'C', 'r', 'R', 'y', 'Y', 'b', 'B', 'g', 'G', 'm', 'M':
 		default:
 			t.Fatalf("unexpected color rune %q", ch)
+		}
+	}
+}
+
+func TestSurfaceSpritesUseRealMultilineStrings(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 120
+	anim.height = 40
+
+	AddShip(nil, anim)
+	AddWhale(nil, anim)
+	AddDucks(nil, anim)
+	AddDolphins(nil, anim)
+	AddSwan(nil, anim)
+
+	for _, e := range anim.entities {
+		if e.Z != float64(Depth["water_gap1"]) &&
+			e.Z != float64(Depth["water_gap2"]) &&
+			e.Z != float64(Depth["water_gap3"]) {
+			continue
+		}
+
+		shape := e.CurrentShape()
+		if !strings.Contains(shape, "\n") {
+			t.Fatalf("expected multiline surface sprite for %q", e.EntityType)
+		}
+		if strings.Contains(shape, `\n`) {
+			t.Fatalf("found literal \\n sequence in surface sprite for %q", e.EntityType)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"strings"
 )
 
 func AddShark(_ *Entity, anim *Animation) {
@@ -54,18 +55,43 @@ func SharkDeath(_ *Entity, anim *Animation) {
 
 func AddShip(_ *Entity, anim *Animation) {
 	shapes := [2]string{
-		`   |\n __|___\n \_____/`,
-		` |\n___|__\n\_____/`,
+		`     |    |    |
+    )_)  )_)  )_)
+   )___))___))___)\
+  )____)____)_____)\\
+_____|____|____|____\\\__
+\                   /`,
+		`         |    |    |
+        (_(  (_(  (_(
+      /(___((___((___(
+    //(_____(____(____(
+__///____|____|____|_____
+    \                   /`,
+	}
+	colors := [2]string{
+		`     y    y    y
+
+                  w
+                   ww
+yyyyyyyyyyyyyyyyyyyywwwyy
+y                   y`,
+		`         y    y    y
+
+      w
+    ww
+yywwwyyyyyyyyyyyyyyyyyyyy
+    y                   y`,
 	}
 	dir := rand.Intn(2)
 	speed := 1.0
-	x := -10
+	x := -24
 	if dir == 1 {
 		speed = -1
 		x = anim.Width() - 2
 	}
 	anim.NewEntity(NewEntityOptions{
 		Shape:         shapes[dir],
+		Color:         colors[dir],
 		AutoTrans:     true,
 		Position:      [3]int{x, 0, Depth["water_gap1"]},
 		DefaultColor:  "WHITE",
@@ -77,20 +103,67 @@ func AddShip(_ *Entity, anim *Animation) {
 
 func AddWhale(_ *Entity, anim *Animation) {
 	shapes := [2]string{
-		`  .-----:
-.' (o)   \`,
-		`:-----.
-/   (o) '.`,
+		`        .-----:
+      .'       ` + "`" + `.
+,    /       (o) \
+\` + "`" + `._/          ,__)`,
+		`    :-----.
+  .'       ` + "`" + `.
+ / (o)       \    ,
+(__,          \_.'/`,
+	}
+	colors := [2]string{
+		`             C C
+           CCCCCCC
+           C  C  C
+        BBBBBBB
+      BB       BB
+B    B       BWB B
+BBBBB          BBBB`,
+		`   C C
+ CCCCCCC
+ C  C  C
+    BBBBBBB
+  BB       BB
+ B BWB       B    B
+BBBB          BBBBB`,
+	}
+	waterSpouts := []string{
+		"\n\n\n   :",
+		"\n\n   :\n   :",
+		"\n  . .\n  -:-\n   :",
+		"\n  . .\n .-:-.\n   :",
+		"\n  . .\n'.-:-.`\n'  :  '",
+		"\n\n .- -.\n;  :  ;",
+		"\n\n\n;     ;",
 	}
 	dir := rand.Intn(2)
 	speed := 0.5
-	x := -12
+	x := -18
+	spoutAlign := 11
 	if dir == 1 {
 		speed = -0.5
 		x = anim.Width() - 2
+		spoutAlign = 1
 	}
+
+	whaleAnim := make([]string, 0, 12)
+	whaleAnimMask := make([]string, 0, 12)
+	for i := 0; i < 5; i++ {
+		whaleAnim = append(whaleAnim, "\n\n\n"+shapes[dir])
+		whaleAnimMask = append(whaleAnimMask, colors[dir])
+	}
+	for _, spoutFrame := range waterSpouts {
+		spoutLines := strings.Split(spoutFrame, "\n")
+		sep := "\n" + strings.Repeat(" ", spoutAlign)
+		alignedSpout := strings.Join(spoutLines, sep)
+		whaleAnim = append(whaleAnim, alignedSpout+"\n"+shapes[dir])
+		whaleAnimMask = append(whaleAnimMask, colors[dir])
+	}
+
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shapes[dir],
+		Shape:         whaleAnim,
+		Color:         whaleAnimMask,
 		AutoTrans:     true,
 		Position:      [3]int{x, 0, Depth["water_gap2"]},
 		DefaultColor:  "WHITE",
@@ -231,10 +304,38 @@ func GroupDeath(entity *Entity, anim *Animation, boundTypes []string) {
 
 func AddDucks(_ *Entity, anim *Animation) {
 	dir := rand.Intn(2)
-	shape := []string{
-		`,____(')=  ,____(')=  ,____(')<`,
-		`>(')____,  =(')____,  =(')____,`,
-	}[dir]
+	shapes := [2][]string{
+		{
+			`      _          _          _
+,____(')=  ,____(')=  ,____(')<
+ \~~= ')    \~~= ')    \~~= ')`,
+			`      _          _          _
+,____(')=  ,____(')<  ,____(')=
+ \~~= ')    \~~= ')    \~~= ')`,
+			`      _          _          _
+,____(')<  ,____(')=  ,____(')=
+ \~~= ')    \~~= ')    \~~= ')`,
+		},
+		{
+			`  _          _          _
+>(')____,  =(')____,  =(')____,
+ (` + "`" + ` =~~/    (` + "`" + ` =~~/    (` + "`" + ` =~~/`,
+			`  _          _          _
+=(')____,  >(')____,  =(')____,
+ (` + "`" + ` =~~/    (` + "`" + ` =~~/    (` + "`" + ` =~~/`,
+			`  _          _          _
+=(')____,  =(')____,  >(')____,
+ (` + "`" + ` =~~/    (` + "`" + ` =~~/    (` + "`" + ` =~~/`,
+		},
+	}
+	colors := [2]string{
+		`      g          g          g
+wwwwwgcgy  wwwwwgcgy  wwwwwgcgy
+ wwww Ww    wwww Ww    wwww Ww`,
+		`  g          g          g
+ygcgwwwww  ygcgwwwww  ygcgwwwww
+ wW wwww    wW wwww    wW wwww`,
+	}
 	speed := 1.0
 	x := -30
 	if dir == 1 {
@@ -242,7 +343,8 @@ func AddDucks(_ *Entity, anim *Animation) {
 		x = anim.Width() - 2
 	}
 	anim.NewEntity(NewEntityOptions{
-		Shape:         shape,
+		Shape:         shapes[dir],
+		Color:         colors[dir],
 		AutoTrans:     true,
 		Position:      [3]int{x, 5, Depth["water_gap3"]},
 		CallbackArgs:  []float64{speed, 0, 0, 0.25},
@@ -262,35 +364,60 @@ func AddDolphins(_ *Entity, anim *Animation) {
 		x = anim.Width() - 2
 		distance = -15
 	}
-	shape := []string{
-		"  __)\n(/_.-'`",
-		" _/(__\n.-'a  `-._/)",
-	}[dir]
+	shapes := [2][]string{
+		{
+			"        ,\n      __)\\\n(\\_.-'    a`-.\n(/~~````(/~^^`",
+			"        ,\n(\\__  __)\\\n(/~.''    a`-.\n    ````\\)~^^`",
+		},
+		{
+			"     ,\n   _/(__\n.-'a    `-._/)\n'^^~\\)''''~~\\)",
+			"     ,\n   _/(__  __/)\n.-'a    ``.~\\)\n'^^~(/''''",
+		},
+	}
+	colors := [2]string{
+		"\n\n\n          W",
+		"\n\n\n   W",
+	}
 	for i := 0; i < 3; i++ {
+		deathCb := EntityDeathHandler(nil)
+		if i == 0 {
+			deathCb = func(_ *Entity, a *Animation) { RandomObject(nil, a) }
+		}
 		anim.NewEntity(NewEntityOptions{
-			Shape:     shape,
+			Shape:     shapes[dir],
+			Color:     colors[dir],
 			AutoTrans: true,
 			Position:  [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
 			CallbackArgs: []float64{
 				speed, 0, 0, 0.5,
 			},
-			DeathCallback: func(_ *Entity, a *Animation) {
-				if i == 0 {
-					RandomObject(nil, a)
-				}
-			},
-			DieOffscreen: true,
-			DefaultColor: "CYAN",
+			DeathCallback: deathCb,
+			DieOffscreen:  true,
+			DefaultColor:  "CYAN",
 		})
 	}
 }
 
 func AddSwan(_ *Entity, anim *Animation) {
 	shapes := [2]string{
-		`  ___
-,_/ _ \`,
+		`       ___
+,_    / _,\
+| \   \( \|
+|  \_  \\
+(_   \_) \
+(\_   ` + "`" + `   \
+ \   -=~  /`,
 		` ___
-/ _ \_,`,
+/,_ \    _,
+|/ )/   / |
+  //  _/  |
+ / ( /   _)
+/   ` + "`" + `   _/)
+\  ~=-   /`,
+	}
+	colors := [2]string{
+		"\n\n         g\n         yy\n\n\n\n",
+		"\n\n g\nyy\n\n\n\n",
 	}
 	dir := rand.Intn(2)
 	speed := 1.0
@@ -301,6 +428,7 @@ func AddSwan(_ *Entity, anim *Animation) {
 	}
 	anim.NewEntity(NewEntityOptions{
 		Shape:         shapes[dir],
+		Color:         colors[dir],
 		AutoTrans:     true,
 		Position:      [3]int{x, 1, Depth["water_gap3"]},
 		CallbackArgs:  []float64{speed, 0, 0, 0.25},
