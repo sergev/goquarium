@@ -10,6 +10,9 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+// Animation is the main runtime controller for the aquarium.
+// It owns screen state, active entities, and loop flags.
+// Most game flow starts from this structure.
 type Animation struct {
 	screen       tcell.Screen
 	entities     []*Entity
@@ -20,6 +23,9 @@ type Animation struct {
 	maskColorMap map[rune]tcell.Color
 }
 
+// NewAnimation creates a new animation manager with defaults.
+// It also prepares the lookup map for masked colors.
+// Call this before spawning anything.
 func NewAnimation() *Animation {
 	return &Animation{
 		colorEnabled: true,
@@ -39,20 +45,31 @@ func NewAnimation() *Animation {
 	}
 }
 
-func (a *Animation) Width() int  { return a.width }
+// Width returns current drawable screen width in cells.
+// Spawners use this value to place entities safely.
+func (a *Animation) Width() int { return a.width }
+
+// Height returns current drawable screen height in cells.
+// This updates after terminal resize events.
 func (a *Animation) Height() int { return a.height }
 
+// NewEntity builds an entity and adds it to the world.
+// This helper saves you from calling two functions manually.
 func (a *Animation) NewEntity(opts NewEntityOptions) *Entity {
 	e := NewEntity(opts)
 	a.AddEntity(e)
 	return e
 }
 
+// AddEntity adds one entity to the internal list.
+// It keeps depth order stable for later drawing.
 func (a *Animation) AddEntity(e *Entity) {
 	a.entities = append(a.entities, e)
 	sort.Slice(a.entities, func(i, j int) bool { return a.entities[i].Z < a.entities[j].Z })
 }
 
+// DelEntity removes one matching entity from the list.
+// If the entity is missing, this function just returns.
 func (a *Animation) DelEntity(e *Entity) {
 	for i := range a.entities {
 		if a.entities[i] == e {
@@ -62,8 +79,12 @@ func (a *Animation) DelEntity(e *Entity) {
 	}
 }
 
+// RemoveAllEntities clears every object from the scene.
+// This is used by the reset command.
 func (a *Animation) RemoveAllEntities() { a.entities = nil }
 
+// GetEntitiesByType returns objects with the same type label.
+// Behavior code uses it to find hooks, teeth, lines, etc.
 func (a *Animation) GetEntitiesByType(tp string) []*Entity {
 	out := make([]*Entity, 0)
 	for _, e := range a.entities {
@@ -74,6 +95,8 @@ func (a *Animation) GetEntitiesByType(tp string) []*Entity {
 	return out
 }
 
+// updateSize reads terminal size and applies minimum checks.
+// The height is one row less to keep drawing safe at bottom.
 func (a *Animation) updateSize() error {
 	w, h := a.screen.Size()
 	if h < 15 || w < 40 {
@@ -84,6 +107,9 @@ func (a *Animation) updateSize() error {
 	return nil
 }
 
+// checkCollisions computes rectangle overlap for physical entities.
+// Matching objects are stored in each entity's Collision list.
+// Handlers process these results during update.
 func (a *Animation) checkCollisions() {
 	for _, e := range a.entities {
 		e.Collision = nil
@@ -107,6 +133,8 @@ func (a *Animation) checkCollisions() {
 	}
 }
 
+// colorByName converts a color name string to tcell color value.
+// Unknown names are treated as white so drawing still works.
 func colorByName(name string) tcell.Color {
 	switch strings.ToUpper(name) {
 	case "BLACK":
@@ -128,6 +156,9 @@ func colorByName(name string) tcell.Color {
 	}
 }
 
+// drawEntity paints one entity on the current frame.
+// It handles clipping, transparency, and color-mask characters.
+// Only visible cells are sent to the terminal.
 func (a *Animation) drawEntity(e *Entity) {
 	x, y, _ := e.Position()
 	lines := strings.Split(e.CurrentShape(), "\n")
@@ -164,6 +195,9 @@ func (a *Animation) drawEntity(e *Entity) {
 	}
 }
 
+// animate runs one full world update step.
+// It updates entities, checks collisions, removes dead ones, then draws.
+// This is called repeatedly by the main loop timer.
 func (a *Animation) animate() {
 	now := time.Now()
 	for _, e := range append([]*Entity{}, a.entities...) {
@@ -187,6 +221,8 @@ func (a *Animation) animate() {
 	a.screen.Show()
 }
 
+// drawInfoOverlay shows help text over the aquarium.
+// It centers lines on screen so controls are easy to read.
 func (a *Animation) drawInfoOverlay() {
 	lines := InfoLines()
 	a.screen.Clear()
@@ -213,6 +249,9 @@ func (a *Animation) drawInfoOverlay() {
 	a.screen.Show()
 }
 
+// Run starts terminal mode and processes the main loop.
+// It listens for keys, updates entities, and redraws frames.
+// The setup callback creates initial scene objects.
 func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -294,6 +333,8 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 	return nil
 }
 
+// EnsureScreenSupport checks if terminal drawing is available.
+// It returns a clear error when no screen backend can be created.
 func EnsureScreenSupport() error {
 	s, err := tcell.NewScreen()
 	if err != nil {

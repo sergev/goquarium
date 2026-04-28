@@ -5,10 +5,21 @@ import (
 	"time"
 )
 
+// EntityCallback is a custom behavior function for one entity.
+// It runs during animation updates and can move or change state.
 type EntityCallback func(*Entity, *Animation) bool
+
+// EntityCollisionHandler runs when an entity touches others.
+// Use it to react to hits like fish meeting a hook or shark.
 type EntityCollisionHandler func(*Entity, *Animation)
+
+// EntityDeathHandler runs right before an entity is removed.
+// It can spawn replacement entities or trigger follow-up effects.
 type EntityDeathHandler func(*Entity, *Animation)
 
+// Entity stores all data needed to draw and animate one object.
+// It keeps shape frames, position, movement callbacks, and life rules.
+// Most creatures and props in the aquarium use this same structure.
 type Entity struct {
 	Name       string
 	EntityType string
@@ -42,6 +53,9 @@ type Entity struct {
 	height       int
 }
 
+// NewEntityOptions is the input bundle for creating an Entity.
+// Grouping fields in one struct keeps constructor calls readable.
+// It also makes optional settings easier to pass.
 type NewEntityOptions struct {
 	Name          string
 	EntityType    string
@@ -60,6 +74,9 @@ type NewEntityOptions struct {
 	AutoTrans     bool
 }
 
+// NewEntity builds an Entity from options and fills safe defaults.
+// It normalizes colors, shape slices, and initial callback arguments.
+// This gives all entities a consistent starting state.
 func NewEntity(opts NewEntityOptions) *Entity {
 	e := &Entity{
 		Name:          opts.Name,
@@ -98,6 +115,9 @@ func NewEntity(opts NewEntityOptions) *Entity {
 	return e
 }
 
+// asFrameSlice converts a shape/color input into []string frames.
+// It supports nil, single string, or already prepared slices.
+// Unknown input falls back to an empty frame safely.
 func asFrameSlice(v any) []string {
 	switch t := v.(type) {
 	case nil:
@@ -115,6 +135,9 @@ func asFrameSlice(v any) []string {
 	}
 }
 
+// updateDimensions recalculates current frame width and height.
+// The renderer and collision checks use these values every frame.
+// It should run whenever shape data may change.
 func (e *Entity) updateDimensions() {
 	lines := strings.Split(e.Shapes[0], "\n")
 	e.height = len(lines)
@@ -127,14 +150,20 @@ func (e *Entity) updateDimensions() {
 	e.width = maxW
 }
 
+// Position returns integer coordinates for drawing and collisions.
+// The entity stores float movement internally, then rounds by cast.
 func (e *Entity) Position() (int, int, int) {
 	return int(e.X), int(e.Y), int(e.Z)
 }
 
+// Size returns current sprite width and height in cells.
+// This helps clipping and collision math stay simple.
 func (e *Entity) Size() (int, int) {
 	return e.width, e.height
 }
 
+// CurrentShape picks the frame to draw right now.
+// It loops automatically when frame index passes frame count.
 func (e *Entity) CurrentShape() string {
 	if len(e.Shapes) == 0 {
 		return ""
@@ -142,6 +171,8 @@ func (e *Entity) CurrentShape() string {
 	return e.Shapes[e.CurrentFrame%len(e.Shapes)]
 }
 
+// CurrentColor picks the active color-mask frame.
+// Like shapes, this cycles through available mask frames.
 func (e *Entity) CurrentColor() string {
 	if len(e.Colors) == 0 {
 		return ""
@@ -149,6 +180,9 @@ func (e *Entity) CurrentColor() string {
 	return e.Colors[e.CurrentFrame%len(e.Colors)]
 }
 
+// MoveEntity applies default movement from callback arguments.
+// It also advances animation frames using configured frame speed.
+// This is used when no custom callback is provided.
 func (e *Entity) MoveEntity(_ *Animation) bool {
 	switch args := e.CallbackArgs.(type) {
 	case []float64:
@@ -178,10 +212,15 @@ func (e *Entity) MoveEntity(_ *Animation) bool {
 	return true
 }
 
+// Kill marks the entity as dead for cleanup.
+// The animation loop removes dead entities on next update.
 func (e *Entity) Kill() {
 	e.Alive = false
 }
 
+// ShouldDie checks all removal rules for this entity.
+// It handles manual kill, time/frame limits, and offscreen cleanup.
+// Returning true means the entity should be deleted now.
 func (e *Entity) ShouldDie(screenWidth, screenHeight int, now time.Time) bool {
 	if !e.Alive {
 		return true
@@ -200,6 +239,9 @@ func (e *Entity) ShouldDie(screenWidth, screenHeight int, now time.Time) bool {
 	return false
 }
 
+// Update runs one entity tick inside the animation loop.
+// It executes movement logic, then optional collision handling.
+// This keeps each object behavior self-contained.
 func (e *Entity) Update(anim *Animation) {
 	if e.Callback != nil {
 		e.Callback(e, anim)

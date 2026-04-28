@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// AddBubble spawns a bubble near a fish mouth.
+// Bubble side changes with fish swimming direction.
 func AddBubble(fish *Entity, anim *Animation) {
 	cbArgs, _ := fish.CallbackArgs.([]float64)
 	fw, fh := fish.Size()
@@ -25,6 +27,8 @@ func AddBubble(fish *Entity, anim *Animation) {
 	})
 }
 
+// BubbleCollision removes a bubble when it reaches water line.
+// This keeps bubbles from floating forever.
 func BubbleCollision(bubble *Entity, _ *Animation) {
 	for _, obj := range bubble.Collision {
 		if obj.EntityType == "waterline" {
@@ -34,6 +38,8 @@ func BubbleCollision(bubble *Entity, _ *Animation) {
 	}
 }
 
+// FishCallback adds random bubble behavior to fish.
+// After that, it uses normal movement logic.
 func FishCallback(fish *Entity, anim *Animation) bool {
 	if rand.Intn(100)+1 > 97 {
 		AddBubble(fish, anim)
@@ -41,6 +47,8 @@ func FishCallback(fish *Entity, anim *Animation) bool {
 	return fish.MoveEntity(anim)
 }
 
+// FishCollision handles fish interactions with danger objects.
+// Fish can be eaten by sharks or caught by a hook.
 func FishCollision(fish *Entity, anim *Animation) {
 	for _, obj := range fish.Collision {
 		if obj.EntityType == "teeth" {
@@ -66,6 +74,8 @@ func FishCollision(fish *Entity, anim *Animation) {
 	}
 }
 
+// AddSplat creates a short red splash animation.
+// It appears when a fish is eaten by a shark.
 func AddSplat(anim *Animation, x, y, z int) {
 	frames := []string{
 		"\n\n   .\n  ***\n   '\n\n",
@@ -83,6 +93,8 @@ func AddSplat(anim *Animation, x, y, z int) {
 	})
 }
 
+// fishDesign stores left/right sprite variants and color masks.
+// We pick one direction based on travel direction.
 type fishDesign struct {
 	shape [2]string
 	color [2]string
@@ -122,6 +134,8 @@ var newFishDesigns = []fishDesign{
 	}},
 }
 
+// randColor replaces number placeholders with random color letters.
+// This gives fish fresh color combinations every spawn.
 func randColor(mask string) string {
 	colors := []string{"c", "C", "r", "R", "y", "Y", "b", "B", "g", "G", "m", "M"}
 	out := mask
@@ -131,6 +145,8 @@ func randColor(mask string) string {
 	return out
 }
 
+// AddFish creates one fish with random design and direction.
+// It chooses speed, depth, spawn side, and death respawn callback.
 func AddFish(_ *Entity, anim *Animation, classicMode bool) {
 	var design fishDesign
 	if classicMode || rand.Intn(12)+1 <= 8 {
@@ -176,6 +192,8 @@ func AddFish(_ *Entity, anim *Animation, classicMode bool) {
 	anim.AddEntity(fish)
 }
 
+// AddAllFish fills the aquarium with starter fish population.
+// Fish count depends on screen area so larger screens look alive.
 func AddAllFish(anim *Animation, classicMode bool) {
 	screenSize := (anim.Height() - 9) * anim.Width()
 	count := screenSize / 350

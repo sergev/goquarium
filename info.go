@@ -5,6 +5,9 @@ import (
 	"runtime"
 )
 
+// InfoText builds the long help screen text.
+// It is shown when user runs --info.
+// This gives a friendly overview of controls and purpose.
 func InfoText() string {
 	return fmt.Sprintf(`
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -23,6 +26,9 @@ CONTROLS:
 `, Version)
 }
 
+// InfoLines returns a short line-by-line overlay message.
+// The animation screen draws these lines in the center.
+// We keep this separate so rendering code stays simple.
 func InfoLines() []string {
 	return []string{
 		"╔═══════════════════════════════════════════════════════════════════════╗",
@@ -37,6 +43,9 @@ func InfoLines() []string {
 	}
 }
 
+// VersionString builds one compact version line.
+// It includes app version, Go runtime, and OS/arch.
+// This is printed for --version and -v.
 func VersionString() string {
 	return fmt.Sprintf("goquarium/%s Go/%s %s/%s", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }

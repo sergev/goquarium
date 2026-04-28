@@ -1,5 +1,8 @@
 package main
 
+// Depth stores drawing layers used by moving objects.
+// Bigger/smaller numbers decide what appears in front.
+// This helps keep fish, water, and props ordered correctly.
 var Depth = map[string]int{
 	"gui_text":    0,
 	"gui":         1,

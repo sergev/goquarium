@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+// AddEnvironment draws repeating water lines near surface.
+// These lines act as visual water layers for bubbles and boats.
 func AddEnvironment(anim *Animation) {
 	waterSegments := []string{
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -34,6 +36,8 @@ func AddEnvironment(anim *Animation) {
 	}
 }
 
+// AddCastle places a decorative castle near the bottom-right.
+// It is static scenery and does not move over time.
 func AddCastle(anim *Animation) {
 	castleShape := `               T~~
                |
@@ -71,6 +75,8 @@ WWWWWWW WWWWW W W WWWWWWWWWWWWWW
 	})
 }
 
+// AddSeaweed creates one animated seaweed plant.
+// It wiggles by frame cycling and respawns after its lifetime ends.
 func AddSeaweed(_ *Entity, anim *Animation) {
 	frames := []string{"", ""}
 	height := rand.Intn(4) + 3
@@ -102,6 +108,8 @@ func AddSeaweed(_ *Entity, anim *Animation) {
 	})
 }
 
+// AddAllSeaweed spawns many seaweed plants at startup.
+// Count scales with terminal width so scene feels balanced.
 func AddAllSeaweed(anim *Animation) {
 	count := anim.Width() / 15
 	for i := 0; i < count; i++ {

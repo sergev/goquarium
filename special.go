@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// AddShark spawns a shark and its teeth hitbox.
+// Shark moves across screen and can eat small fish.
 func AddShark(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`   __
@@ -46,6 +48,8 @@ __/o )>`,
 	})
 }
 
+// SharkDeath removes teeth when shark exits.
+// It then spawns another random special object.
 func SharkDeath(_ *Entity, anim *Animation) {
 	for _, t := range anim.GetEntitiesByType("teeth") {
 		anim.DelEntity(t)
@@ -53,6 +57,8 @@ func SharkDeath(_ *Entity, anim *Animation) {
 	RandomObject(nil, anim)
 }
 
+// AddShip spawns a boat moving on the surface layer.
+// It includes color mask so sails and hull have detail.
 func AddShip(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`     |    |    |
@@ -101,6 +107,8 @@ yywwwyyyyyyyyyyyyyyyyyyyy
 	})
 }
 
+// AddWhale creates a whale with multi-frame spout animation.
+// Body and spout frames are combined to simulate blowing water.
 func AddWhale(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`        .-----:
@@ -173,6 +181,8 @@ BBBB          BBBBB`,
 	})
 }
 
+// AddMonster spawns a sea monster crossing the screen.
+// It is a large special event creature in deeper layer.
 func AddMonster(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		` _a_a
@@ -198,6 +208,8 @@ func AddMonster(_ *Entity, anim *Animation) {
 	})
 }
 
+// AddBigFish creates a larger fast fish variant.
+// It appears as a random special object.
 func AddBigFish(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		` __
@@ -227,6 +239,8 @@ func AddBigFish(_ *Entity, anim *Animation) {
 	})
 }
 
+// AddFishhook drops a hook setup: line, hook, and point.
+// Fish can collide with hook point and get reeled up.
 func AddFishhook(_ *Entity, anim *Animation) {
 	x := 10 + rand.Intn(maxInt(1, anim.Width()-30))
 	yStart := -20
@@ -260,6 +274,8 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	})
 }
 
+// FishhookCallback controls hook lowering and retracting.
+// Mode in callback args decides direction of vertical movement.
 func FishhookCallback(entity *Entity, anim *Animation) bool {
 	mode := ""
 	switch args := entity.CallbackArgs.(type) {
@@ -282,6 +298,8 @@ func FishhookCallback(entity *Entity, anim *Animation) bool {
 	return true
 }
 
+// Retract switches an entity into "hooked" upward movement.
+// Used for fish, line, and hook after a catch event.
 func Retract(entity *Entity, _ *Animation) {
 	entity.Physical = false
 	if entity.EntityType == "fish" {
@@ -293,6 +311,8 @@ func Retract(entity *Entity, _ *Animation) {
 	entity.CallbackArgs = map[string]string{"mode": "hooked"}
 }
 
+// GroupDeath removes linked entities by type.
+// After cleanup, it starts another random special event.
 func GroupDeath(entity *Entity, anim *Animation, boundTypes []string) {
 	for _, tp := range boundTypes {
 		for _, obj := range anim.GetEntitiesByType(tp) {
@@ -302,6 +322,8 @@ func GroupDeath(entity *Entity, anim *Animation, boundTypes []string) {
 	RandomObject(entity, anim)
 }
 
+// AddDucks spawns animated ducks on the water surface.
+// They cycle wing/pose frames while moving sideways.
 func AddDucks(_ *Entity, anim *Animation) {
 	dir := rand.Intn(2)
 	shapes := [2][]string{
@@ -354,6 +376,8 @@ ygcgwwwww  ygcgwwwww  ygcgwwwww
 	})
 }
 
+// AddDolphins spawns three dolphins in a moving formation.
+// The leading dolphin owns respawn callback for next event.
 func AddDolphins(_ *Entity, anim *Animation) {
 	dir := rand.Intn(2)
 	speed := 2.0
@@ -398,6 +422,8 @@ func AddDolphins(_ *Entity, anim *Animation) {
 	}
 }
 
+// AddSwan spawns a swan gliding near the top water line.
+// Direction and sprite frame are picked randomly.
 func AddSwan(_ *Entity, anim *Animation) {
 	shapes := [2]string{
 		`       ___
@@ -438,6 +464,8 @@ func AddSwan(_ *Entity, anim *Animation) {
 	})
 }
 
+// RandomObject picks and spawns one random special event.
+// This keeps the scene varied over time.
 func RandomObject(dead *Entity, anim *Animation) {
 	randomObjects := []func(*Entity, *Animation){
 		AddShip,
@@ -454,6 +482,8 @@ func RandomObject(dead *Entity, anim *Animation) {
 	spawner(dead, anim)
 }
 
+// maxInt returns the larger of two integers.
+// It is a small helper for safe random ranges.
 func maxInt(a, b int) int {
 	if a > b {
 		return a

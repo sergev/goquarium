@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// TestEntityMoveFrame checks default movement math.
+// It also confirms frame index advances after enough frame time.
 func TestEntityMoveFrame(t *testing.T) {
 	e := NewEntity(NewEntityOptions{
 		Shape:        []string{"a", "b"},
@@ -21,6 +23,8 @@ func TestEntityMoveFrame(t *testing.T) {
 	}
 }
 
+// TestEntityShouldDie verifies time-based death rule.
+// Entity should be removed when current time is past die time.
 func TestEntityShouldDie(t *testing.T) {
 	now := time.Now()
 	past := now.Add(-time.Second)
@@ -30,6 +34,8 @@ func TestEntityShouldDie(t *testing.T) {
 	}
 }
 
+// TestCollisionDetection checks overlap collision logic.
+// Two close entities should appear in collision list.
 func TestCollisionDetection(t *testing.T) {
 	a := NewAnimation()
 	e1 := NewEntity(NewEntityOptions{Shape: "xx", Position: [3]int{1, 1, 1}, Physical: true})
@@ -41,6 +47,8 @@ func TestCollisionDetection(t *testing.T) {
 	}
 }
 
+// TestRandColor ensures color placeholders are replaced.
+// Output should contain only known color marker runes.
 func TestRandColor(t *testing.T) {
 	mask := randColor("123456789")
 	if len(mask) != 9 {
@@ -55,6 +63,8 @@ func TestRandColor(t *testing.T) {
 	}
 }
 
+// TestSurfaceSpritesUseRealMultilineStrings guards sprite formatting.
+// It catches accidental literal "\\n" strings in surface sprites.
 func TestSurfaceSpritesUseRealMultilineStrings(t *testing.T) {
 	anim := NewAnimation()
 	anim.width = 120

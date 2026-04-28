@@ -6,6 +6,9 @@ import (
 	"io"
 )
 
+// RunCLI reads command-line flags and decides what to do.
+// It can print info/version text, or start the animation.
+// This function is the main "traffic controller" for CLI behavior.
 func RunCLI(args []string) error {
 	fs := flag.NewFlagSet("goquarium", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
