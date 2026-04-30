@@ -408,13 +408,20 @@ func addBigFish2(_ *Entity, anim *Animation) {
 // AddFishhook creates a 3-part system: line, visible hook, and catch point.
 // All parts share the same callback mode so they move together.
 // Hook point is the physical part that fish collides with.
+const (
+	fishhookLineHeight    = 50
+	fishhookTopClampY     = -10
+	hookPointYOffset      = 2
+	fishlineYOffsetFromHook = -fishhookLineHeight
+)
+
 func AddFishhook(_ *Entity, anim *Animation) {
 	x := 10 + rand.Intn(maxInt(1, anim.Width()-30))
 	yStart := -20
-	yLine := yStart - 50
+	yLine := yStart + fishlineYOffsetFromHook
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "fishline",
-		Shape:        []string{strings.Repeat("|\n", 50) + strings.Repeat(" \n", 6)},
+		Shape:        []string{strings.Repeat("|\n", fishhookLineHeight)},
 		Position:     [3]int{x + 7, yLine, Depth["water_line1"]},
 		AutoTrans:    true,
 		Callback:     FishhookCallback,
@@ -425,7 +432,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 		Shape:         []string{"       o\n      ||\n      ||\n/ \\   ||\n  \\__//\n  `--'"},
 		Position:      [3]int{x, yStart, Depth["water_line1"]},
 		AutoTrans:     true,
-		DieOffscreen:  true,
+		DieOffscreen:  false,
 		DefaultColor:  "GREEN",
 		Callback:      FishhookCallback,
 		CallbackArgs:  map[string]string{"mode": "lowering"},
@@ -434,7 +441,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "hook_point",
 		Shape:        []string{".\n \n\\\n "},
-		Position:     [3]int{x + 1, yStart + 2, Depth["shark"] + 1},
+		Position:     [3]int{x + 1, yStart + hookPointYOffset, Depth["shark"] + 1},
 		Physical:     true,
 		DefaultColor: "GREEN",
 		Callback:     FishhookCallback,
@@ -446,24 +453,56 @@ func AddFishhook(_ *Entity, anim *Animation) {
 // "lowering" moves down to max depth; "hooked" reels upward to top clamp.
 // This callback uses mode map args, unlike most entities' []float64 args.
 func FishhookCallback(entity *Entity, anim *Animation) bool {
+	nextHookY := func(y float64, hookMode string) float64 {
+		if hookMode == "hooked" {
+			y -= 2
+			if y < float64(fishhookTopClampY) {
+				y = float64(fishhookTopClampY)
+			}
+			return y
+		}
+		maxDepth := float64(int(float64(anim.Height()) * 0.75))
+		y += 2
+		if y > maxDepth {
+			y = maxDepth
+		}
+		return y
+	}
+
 	mode := ""
 	switch args := entity.CallbackArgs.(type) {
 	case map[string]string:
 		mode = args["mode"]
 	}
-	if mode == "hooked" {
-		entity.Y -= 2
-		if entity.Y < -10 {
-			entity.Y = -10
+
+	// Keep non-hook parts attached to the hook while it moves down/up.
+	// This avoids visual drift where the line can outrun the hook on descent.
+	if entity.EntityType != "fishhook" {
+		hooks := anim.GetEntitiesByType("fishhook")
+		if len(hooks) > 0 {
+			hook := hooks[0]
+			hookMode := ""
+			switch args := hook.CallbackArgs.(type) {
+			case map[string]string:
+				hookMode = args["mode"]
+			}
+			targetHookY := nextHookY(hook.Y, hookMode)
+			switch entity.EntityType {
+			case "fishline":
+				entity.Y = targetHookY + float64(fishlineYOffsetFromHook)
+				return true
+			case "hook_point":
+				entity.Y = targetHookY + float64(hookPointYOffset)
+				return true
+			}
 		}
+	}
+
+	if mode == "hooked" {
+		entity.Y = nextHookY(entity.Y, mode)
 		return true
 	}
-	maxDepth := int(float64(anim.Height()) * 0.75)
-	if int(entity.Y) < maxDepth {
-		entity.Y += 2
-	} else {
-		entity.Y = float64(maxDepth)
-	}
+	entity.Y = nextHookY(entity.Y, mode)
 	return true
 }
 
@@ -478,6 +517,9 @@ func Retract(entity *Entity, _ *Animation) {
 		return
 	}
 	entity.CallbackArgs = map[string]string{"mode": "hooked"}
+	if entity.EntityType == "fishhook" {
+		entity.DieOffscreen = true
+	}
 }
 
 // GroupDeath removes all entities of listed types from scene.

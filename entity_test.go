@@ -272,8 +272,171 @@ func TestFishhookVisualParity(t *testing.T) {
 	if len(strings.Split(hook.CurrentShape(), "\n")) < 6 {
 		t.Fatalf("expected larger fishhook sprite")
 	}
-	if strings.Count(line.CurrentShape(), "|\n") < 50 {
-		t.Fatalf("expected long fishline with at least 50 pipe segments")
+	lineShape := line.CurrentShape()
+	if strings.Count(lineShape, "|\n") != 50 {
+		t.Fatalf("expected fishline with exactly 50 pipe segments")
+	}
+	if !strings.HasPrefix(lineShape, "|\n") {
+		t.Fatalf("expected fishline to start with line segments")
+	}
+	if strings.Contains(lineShape, " \n") {
+		t.Fatalf("expected fishline to have no spacer rows")
+	}
+}
+
+func TestFishhookSpawnStartsWithOffscreenDeathDisabled(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 200
+	anim.height = 60
+	AddFishhook(nil, anim)
+
+	var hook *Entity
+	for _, e := range anim.entities {
+		if e.EntityType == "fishhook" {
+			hook = e
+			break
+		}
+	}
+	if hook == nil {
+		t.Fatalf("expected fishhook entity")
+	}
+	if hook.DieOffscreen {
+		t.Fatalf("expected lowering fishhook to spawn with offscreen death disabled")
+	}
+}
+
+func TestFishhookRetractEnablesOffscreenDeath(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 200
+	anim.height = 60
+	AddFishhook(nil, anim)
+
+	var hook *Entity
+	for _, e := range anim.entities {
+		if e.EntityType == "fishhook" {
+			hook = e
+			break
+		}
+	}
+	if hook == nil {
+		t.Fatalf("expected fishhook entity")
+	}
+
+	Retract(hook, anim)
+
+	args, ok := hook.CallbackArgs.(map[string]string)
+	if !ok {
+		t.Fatalf("expected fishhook callback args map, got %T", hook.CallbackArgs)
+	}
+	if args["mode"] != "hooked" {
+		t.Fatalf("expected fishhook mode to be hooked, got %q", args["mode"])
+	}
+	if !hook.DieOffscreen {
+		t.Fatalf("expected fishhook offscreen death to be enabled during retract")
+	}
+}
+
+func TestFishhookRetractPreservesLineAndPointOffsets(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 200
+	anim.height = 60
+	AddFishhook(nil, anim)
+
+	var hook *Entity
+	var line *Entity
+	var hookPoint *Entity
+	for _, e := range anim.entities {
+		switch e.EntityType {
+		case "fishhook":
+			hook = e
+		case "fishline":
+			line = e
+		case "hook_point":
+			hookPoint = e
+		}
+	}
+	if hook == nil || line == nil || hookPoint == nil {
+		t.Fatalf("expected fishhook rig entities")
+	}
+
+	Retract(hook, anim)
+	Retract(line, anim)
+	Retract(hookPoint, anim)
+
+	for i := 0; i < 200; i++ {
+		hook.Update(anim)
+		line.Update(anim)
+		hookPoint.Update(anim)
+	}
+
+	if int(hook.Y) != -10 {
+		t.Fatalf("expected hook clamp Y -10, got %v", hook.Y)
+	}
+	if int(line.Y) != -60 {
+		t.Fatalf("expected line to stay 50 rows above hook after retract, got %v", line.Y)
+	}
+	if int(hookPoint.Y) != -8 {
+		t.Fatalf("expected hook point to stay 2 rows below hook after retract, got %v", hookPoint.Y)
+	}
+}
+
+func TestFishCollisionRetractsFishhookAndFishline(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 200
+	anim.height = 60
+
+	AddFishhook(nil, anim)
+	fish := NewEntity(NewEntityOptions{
+		EntityType:   "fish",
+		Shape:        []string{"><>"},
+		Callback:     FishCallback,
+		CallbackArgs: []float64{0, 0, 0, 0},
+		Physical:     true,
+		CollHandler:  FishCollision,
+	})
+
+	var hookPoint *Entity
+	var hook *Entity
+	var line *Entity
+	for _, e := range anim.entities {
+		switch e.EntityType {
+		case "hook_point":
+			hookPoint = e
+		case "fishhook":
+			hook = e
+		case "fishline":
+			line = e
+		}
+	}
+	if hookPoint == nil || hook == nil || line == nil {
+		t.Fatalf("expected hook point, fishhook, and fishline entities")
+	}
+
+	fish.Collision = []*Entity{hookPoint}
+	FishCollision(fish, anim)
+
+	fishArgs, ok := fish.CallbackArgs.(map[string]string)
+	if !ok {
+		t.Fatalf("expected fish callback args to switch to map mode, got %T", fish.CallbackArgs)
+	}
+	if fishArgs["mode"] != "hooked" {
+		t.Fatalf("expected fish mode to be hooked, got %q", fishArgs["mode"])
+	}
+
+	hookArgs, ok := hook.CallbackArgs.(map[string]string)
+	if !ok {
+		t.Fatalf("expected fishhook callback args map, got %T", hook.CallbackArgs)
+	}
+	if hookArgs["mode"] != "hooked" {
+		t.Fatalf("expected fishhook mode to be hooked, got %q", hookArgs["mode"])
+	}
+
+	lineArgs, ok := line.CallbackArgs.(map[string]string)
+	if !ok {
+		t.Fatalf("expected fishline callback args map, got %T", line.CallbackArgs)
+	}
+	if lineArgs["mode"] != "hooked" {
+		t.Fatalf("expected fishline mode to be hooked, got %q", lineArgs["mode"])
 	}
 }
 
