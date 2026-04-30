@@ -1,3 +1,4 @@
 asciiquarium-python
 goquarium
-coverage.out
+*.out
+*.log

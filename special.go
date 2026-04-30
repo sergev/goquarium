@@ -1,9 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
+	"os"
 	"strings"
 )
+
+func debugf(format string, args ...any) {
+	if DebugLogEnabled {
+		fmt.Fprintf(os.Stderr, format, args...)
+	}
+}
 
 // AddShark creates two linked entities: shark art and teeth hitbox.
 // Keeping teeth separate makes collision checks simple and precise.
@@ -419,6 +427,7 @@ func AddFishhook(_ *Entity, anim *Animation) {
 	x := 10 + rand.Intn(maxInt(1, anim.Width()-30))
 	yStart := -20
 	yLine := yStart + fishlineYOffsetFromHook
+	debugf("[fishhook] AddFishhook called: x=%d yStart=%d yLine=%d\n", x, yStart, yLine)
 	anim.NewEntity(NewEntityOptions{
 		EntityType:   "fishline",
 		Shape:        []string{strings.Repeat("|\n", fishhookLineHeight)},
@@ -475,11 +484,13 @@ func FishhookCallback(entity *Entity, anim *Animation) bool {
 		mode = args["mode"]
 	}
 
-	// Keep non-hook parts attached to the hook while it moves down/up.
-	// This avoids visual drift where the line can outrun the hook on descent.
-	if entity.EntityType != "fishhook" {
+	// Keep rig parts (fishline, hook_point) anchored to the hook while it moves.
+	// Caught fish use FishhookCallback too, but they rise independently — no lookup needed.
+	if entity.EntityType == "fishline" || entity.EntityType == "hook_point" {
 		hooks := anim.GetEntitiesByType("fishhook")
-		if len(hooks) > 0 {
+		if len(hooks) == 0 {
+			debugf("[fishhook] WARNING: %s has no parent fishhook (orphaned rig part)\n", entity.EntityType)
+		} else {
 			hook := hooks[0]
 			hookMode := ""
 			switch args := hook.CallbackArgs.(type) {
@@ -498,17 +509,29 @@ func FishhookCallback(entity *Entity, anim *Animation) bool {
 		}
 	}
 
+	prevY := entity.Y
 	if mode == "hooked" {
 		entity.Y = nextHookY(entity.Y, mode)
-		return true
+	} else {
+		entity.Y = nextHookY(entity.Y, mode)
 	}
-	entity.Y = nextHookY(entity.Y, mode)
+	maxDepth := float64(int(float64(anim.Height()) * 0.75))
+	if prevY < 0 && entity.Y >= 0 {
+		debugf("[fishhook] fishhook entered screen: Y=%.0f mode=%s\n", entity.Y, mode)
+	}
+	if prevY < maxDepth && entity.Y >= maxDepth {
+		debugf("[fishhook] fishhook reached max depth: Y=%.0f maxDepth=%.0f mode=%s DieOffscreen=%v\n", entity.Y, maxDepth, mode, entity.DieOffscreen)
+	}
+	if entity.Y <= float64(fishhookTopClampY) && mode == "hooked" {
+		debugf("[fishhook] fishhook clamped at top: Y=%.0f DieOffscreen=%v\n", entity.Y, entity.DieOffscreen)
+	}
 	return true
 }
 
 // Retract switches an entity into "hooked" upward movement.
 // Used for fish, line, and hook after a catch event.
 func Retract(entity *Entity, _ *Animation) {
+	debugf("[fishhook] Retract called on %s at Y=%.0f\n", entity.EntityType, entity.Y)
 	entity.Physical = false
 	if entity.EntityType == "fish" {
 		entity.Z = float64(Depth["water_gap2"])
@@ -519,6 +542,7 @@ func Retract(entity *Entity, _ *Animation) {
 	entity.CallbackArgs = map[string]string{"mode": "hooked"}
 	if entity.EntityType == "fishhook" {
 		entity.DieOffscreen = true
+		debugf("[fishhook] fishhook DieOffscreen enabled, will retract and die\n")
 	}
 }
 
@@ -526,6 +550,7 @@ func Retract(entity *Entity, _ *Animation) {
 // It is used for grouped cleanup (for example hook + line + point).
 // After cleanup, it chains into the next random event.
 func GroupDeath(entity *Entity, anim *Animation, boundTypes []string) {
+	debugf("[fishhook] GroupDeath: fishhook died at Y=%.0f, cleaning up %v\n", entity.Y, boundTypes)
 	for _, tp := range boundTypes {
 		for _, obj := range anim.GetEntitiesByType(tp) {
 			anim.DelEntity(obj)
@@ -698,8 +723,13 @@ func RandomObject(dead *Entity, anim *Animation) {
 		AddDucks,
 		AddDolphins,
 	}
-	spawner := randomObjects[rand.Intn(len(randomObjects))]
-	spawner(dead, anim)
+	names := []string{
+		"AddShip", "AddWhale", "AddMonster", "AddBigFish", "AddShark",
+		"AddFishhook", "AddSwan", "AddDucks", "AddDolphins",
+	}
+	idx := rand.Intn(len(randomObjects))
+	debugf("[RandomObject] picked %s (index %d)\n", names[idx], idx)
+	randomObjects[idx](dead, anim)
 }
 
 // maxInt returns the larger of two integers.

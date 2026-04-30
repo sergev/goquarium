@@ -62,7 +62,7 @@ func FishCollision(fish *Entity, anim *Animation) {
 			}
 			return
 		}
-		if obj.EntityType == "hook_point" {
+		if obj.EntityType == "hook_point" && obj.Physical {
 			Retract(obj, anim)
 			Retract(fish, anim)
 			for _, h := range anim.GetEntitiesByType("fishhook") {
