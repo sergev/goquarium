@@ -1,6 +1,6 @@
 # goquarium
 
-ASCII aquarium animation for your terminal, written in Go with `tcell`.
+ASCII aquarium animation for your terminal, written in Go with [termbox-go](https://github.com/nsf/termbox-go).
 
 This project is a Go rewrite inspired by the classic asciiquarium and the Python port in `asciiquarium-python/`.
 

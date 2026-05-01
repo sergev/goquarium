@@ -7,7 +7,7 @@ Use it to quickly understand the repo, prior decisions, and safe workflows.
 
 - Project: `goquarium`
 - Language: Go
-- Rendering library: `github.com/gdamore/tcell/v2`
+- Rendering library: `github.com/nsf/termbox-go`
 - Module: `github.com/sergev/goquarium`
 - Entry point: `main.go`
 

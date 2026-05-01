@@ -1,26 +1,24 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/nsf/termbox-go"
 )
 
 // Animation is the main runtime controller for the aquarium.
 // It owns screen state, active entities, and loop flags.
 // Most game flow starts from this structure.
 type Animation struct {
-	screen       tcell.Screen
 	entities     []*Entity
 	colorEnabled bool
 	running      bool
 	width        int
 	height       int
-	maskColorMap map[rune]tcell.Color
+	maskColorMap map[rune]termbox.Attribute
 }
 
 // NewAnimation creates a new animation manager with defaults.
@@ -29,18 +27,18 @@ type Animation struct {
 func NewAnimation() *Animation {
 	return &Animation{
 		colorEnabled: true,
-		maskColorMap: map[rune]tcell.Color{
-			'r': tcell.ColorRed, 'R': tcell.ColorRed,
-			'g': tcell.ColorGreen, 'G': tcell.ColorGreen,
-			'y': tcell.ColorYellow, 'Y': tcell.ColorYellow,
-			'b': tcell.ColorBlue, 'B': tcell.ColorBlue,
-			'm': tcell.ColorDarkMagenta, 'M': tcell.ColorDarkMagenta,
-			'c': tcell.ColorTeal, 'C': tcell.ColorTeal,
-			'w': tcell.ColorWhite, 'W': tcell.ColorWhite,
-			'k': tcell.ColorBlack, 'K': tcell.ColorBlack,
-			'1': tcell.ColorTeal, '2': tcell.ColorYellow, '3': tcell.ColorGreen,
-			'4': tcell.ColorWhite, '5': tcell.ColorRed, '6': tcell.ColorBlue,
-			'7': tcell.ColorDarkMagenta, '8': tcell.ColorBlack, '9': tcell.ColorWhite,
+		maskColorMap: map[rune]termbox.Attribute{
+			'r': termbox.ColorRed, 'R': termbox.ColorRed,
+			'g': termbox.ColorGreen, 'G': termbox.ColorGreen,
+			'y': termbox.ColorYellow, 'Y': termbox.ColorYellow,
+			'b': termbox.ColorBlue, 'B': termbox.ColorBlue,
+			'm': termbox.ColorMagenta, 'M': termbox.ColorMagenta,
+			'c': termbox.ColorCyan, 'C': termbox.ColorCyan,
+			'w': termbox.ColorWhite, 'W': termbox.ColorWhite,
+			'k': termbox.ColorBlack, 'K': termbox.ColorBlack,
+			'1': termbox.ColorCyan, '2': termbox.ColorYellow, '3': termbox.ColorGreen,
+			'4': termbox.ColorWhite, '5': termbox.ColorRed, '6': termbox.ColorBlue,
+			'7': termbox.ColorMagenta, '8': termbox.ColorBlack, '9': termbox.ColorWhite,
 		},
 	}
 }
@@ -99,7 +97,7 @@ func (a *Animation) GetEntitiesByType(tp string) []*Entity {
 // We require a minimum size so large ASCII art does not break badly.
 // Height is stored as one row less to avoid bottom-row terminal glitches.
 func (a *Animation) updateSize() error {
-	w, h := a.screen.Size()
+	w, h := termbox.Size()
 	if h < 15 || w < 40 {
 		return fmt.Errorf("terminal too small: need at least 40x15, got %dx%d", w, h)
 	}
@@ -134,26 +132,26 @@ func (a *Animation) checkCollisions() {
 	}
 }
 
-// colorByName converts a color name string to tcell color value.
+// colorByName converts a color name string to a termbox attribute.
 // Unknown names are treated as white so drawing still works.
-func colorByName(name string) tcell.Color {
+func colorByName(name string) termbox.Attribute {
 	switch strings.ToUpper(name) {
 	case "BLACK":
-		return tcell.ColorBlack
+		return termbox.ColorBlack
 	case "RED":
-		return tcell.ColorRed
+		return termbox.ColorRed
 	case "GREEN":
-		return tcell.ColorGreen
+		return termbox.ColorGreen
 	case "YELLOW":
-		return tcell.ColorYellow
+		return termbox.ColorYellow
 	case "BLUE":
-		return tcell.ColorBlue
+		return termbox.ColorBlue
 	case "MAGENTA":
-		return tcell.ColorDarkMagenta
+		return termbox.ColorMagenta
 	case "CYAN":
-		return tcell.ColorTeal
+		return termbox.ColorCyan
 	default:
-		return tcell.ColorWhite
+		return termbox.ColorWhite
 	}
 }
 
@@ -185,13 +183,13 @@ func (a *Animation) drawEntity(e *Entity) {
 			if ch < 32 {
 				continue
 			}
-			style := tcell.StyleDefault.Foreground(colorByName(e.DefaultColor))
+			fg := colorByName(e.DefaultColor)
 			if a.colorEnabled && ci < len(colorRunes) {
 				if c, ok := a.maskColorMap[colorRunes[ci]]; ok {
-					style = style.Foreground(c)
+					fg = c
 				}
 			}
-			a.screen.SetContent(drawX, drawY, ch, nil, style)
+			termbox.SetCell(drawX, drawY, ch, fg, termbox.ColorDefault)
 		}
 	}
 }
@@ -199,13 +197,13 @@ func (a *Animation) drawEntity(e *Entity) {
 // drawFrame renders current entities without advancing simulation state.
 // This is used for immediate redraw requests like terminal resize.
 func (a *Animation) drawFrame() {
-	a.screen.Clear()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	sorted := append([]*Entity{}, a.entities...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Z > sorted[j].Z })
 	for _, e := range sorted {
 		a.drawEntity(e)
 	}
-	a.screen.Show()
+	termbox.Flush()
 }
 
 // reflowForResize rebuilds size-dependent static scenery and keeps dynamic entities.
@@ -257,10 +255,10 @@ func (a *Animation) animate() {
 	a.drawFrame()
 }
 
-// infoStyleFor returns a structured text style for one info-overlay rune.
+// infoStyleFor returns a foreground attribute for one info-overlay rune.
 // It keeps colors consistent across header, controls, and hint lines.
-func infoStyleFor(lineIdx int, line string, ch rune) tcell.Style {
-	base := tcell.StyleDefault.Foreground(tcell.ColorWhite)
+func infoStyleFor(lineIdx int, line string, ch rune) termbox.Attribute {
+	base := termbox.ColorWhite
 	if ch == ' ' {
 		return base
 	}
@@ -268,19 +266,19 @@ func infoStyleFor(lineIdx int, line string, ch rune) tcell.Style {
 	// Box frame and header lines use an accent color.
 	if lineIdx <= 4 {
 		if strings.ContainsRune("╔═╗║╚╝", ch) {
-			return base.Foreground(tcell.ColorTeal)
+			return termbox.ColorCyan
 		}
-		return base.Foreground(tcell.ColorWhite)
+		return termbox.ColorWhite
 	}
 
 	// Controls line highlights control keys and ESC.
 	if strings.Contains(line, "Q/q quit") {
-		return base.Foreground(tcell.ColorGreen)
+		return termbox.ColorGreen
 	}
 
 	// Final hint line uses a secondary accent and emphasizes key names.
 	if strings.Contains(line, "Press I or ESC") {
-		return base.Foreground(tcell.ColorDarkMagenta)
+		return termbox.ColorMagenta
 	}
 
 	return base
@@ -290,7 +288,7 @@ func infoStyleFor(lineIdx int, line string, ch rune) tcell.Style {
 // It centers lines on screen so controls are easy to read.
 func (a *Animation) drawInfoOverlay() {
 	lines := InfoLines()
-	a.screen.Clear()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	startY := (a.height - len(lines)) / 2
 	if startY < 0 {
 		startY = 0
@@ -308,73 +306,93 @@ func (a *Animation) drawInfoOverlay() {
 			if x+ci >= a.width {
 				break
 			}
-			a.screen.SetContent(x+ci, y, ch, nil, infoStyleFor(i, ln, ch))
+			fg := infoStyleFor(i, ln, ch)
+			termbox.SetCell(x+ci, y, ch, fg, termbox.ColorDefault)
 		}
 	}
-	a.screen.Show()
+	termbox.Flush()
 }
 
 // Run is the main state machine for the app.
 // It initializes terminal mode, runs setup, then loops on input and ticks.
 // Info mode pauses movement so overlay text stays easy to read.
 func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
-	s, err := tcell.NewScreen()
-	if err != nil {
+	if err := termbox.Init(); err != nil {
 		return err
 	}
-	if err := s.Init(); err != nil {
-		return err
-	}
-	defer s.Fini()
-	a.screen = s
+	defer func() {
+		termbox.Interrupt()
+		termbox.Close()
+	}()
+
 	if err := a.updateSize(); err != nil {
 		return err
 	}
 	a.running = true
 	setup(a, classic)
 
+	events := make(chan termbox.Event, 64)
+	go func() {
+		for {
+			ev := termbox.PollEvent()
+			if ev.Type == termbox.EventInterrupt {
+				return
+			}
+			events <- ev
+		}
+	}()
+
 	paused := false
 	showingInfo := false
 
 	for a.running {
-		for a.screen.HasPendingEvent() {
-			switch tev := a.screen.PollEvent().(type) {
-			case *tcell.EventResize:
-				a.screen.Sync()
-				if err := a.updateSize(); err != nil {
-					return err
-				}
-				a.reflowForResize()
-				if showingInfo {
-					a.drawInfoOverlay()
-				} else {
-					a.drawFrame()
-				}
-			case *tcell.EventKey:
-				if tev.Key() == tcell.KeyEscape && showingInfo {
-					showingInfo = false
-					paused = false
-				} else if tev.Key() == tcell.KeyRune {
-					switch tev.Rune() {
-					case 'q', 'Q':
-						a.running = false
-					case 'r', 'R':
-						a.RemoveAllEntities()
-						setup(a, classic)
-					case 'p', 'P':
-						if !showingInfo {
-							paused = !paused
-						}
-					case 'i', 'I':
-						showingInfo = !showingInfo
-						if showingInfo {
-							paused = true
-							a.drawInfoOverlay()
-						} else {
-							paused = false
+	drainEvents:
+		for {
+			select {
+			case ev := <-events:
+				switch ev.Type {
+				case termbox.EventResize:
+					if err := a.updateSize(); err != nil {
+						return err
+					}
+					a.reflowForResize()
+					if showingInfo {
+						a.drawInfoOverlay()
+					} else {
+						a.drawFrame()
+					}
+				case termbox.EventKey:
+					if ev.Key == termbox.KeyEsc && showingInfo {
+						showingInfo = false
+						paused = false
+					} else if ev.Ch != 0 {
+						switch ev.Ch {
+						case 'q', 'Q':
+							a.running = false
+						case 'r', 'R':
+							a.RemoveAllEntities()
+							setup(a, classic)
+						case 'p', 'P':
+							if !showingInfo {
+								paused = !paused
+							}
+						case 'i', 'I':
+							showingInfo = !showingInfo
+							if showingInfo {
+								paused = true
+								a.drawInfoOverlay()
+							} else {
+								paused = false
+							}
 						}
 					}
+				case termbox.EventError:
+					if ev.Err != nil {
+						return ev.Err
+					}
 				}
+			default:
+				break drainEvents
 			}
 		}
 		if showingInfo {
@@ -388,14 +406,11 @@ func (a *Animation) Run(setup func(*Animation, bool), classic bool) error {
 }
 
 // EnsureScreenSupport checks if terminal drawing is available.
-// It returns a clear error when no screen backend can be created.
+// It returns a clear error when termbox cannot initialize the terminal.
 func EnsureScreenSupport() error {
-	s, err := tcell.NewScreen()
-	if err != nil {
+	if err := termbox.Init(); err != nil {
 		return err
 	}
-	if s == nil {
-		return errors.New("no compatible terminal screen available")
-	}
+	termbox.Close()
 	return nil
 }
