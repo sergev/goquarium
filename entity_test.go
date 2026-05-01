@@ -536,3 +536,66 @@ func TestReflowForResizePreservesDynamicAndRebuildsStatic(t *testing.T) {
 		t.Fatalf("unexpected seaweed count after reflow: got %d, want %d", seaweedCount, anim.Width()/15)
 	}
 }
+
+// tickAquariumNoDraw runs the same update/collision/death pass as Animation.animate
+// without termbox drawing, so tests can exercise entity lifecycle in isolation.
+func tickAquariumNoDraw(a *Animation) {
+	now := time.Now()
+	for _, e := range append([]*Entity{}, a.entities...) {
+		e.Update(a)
+	}
+	a.checkCollisions()
+	for _, e := range append([]*Entity{}, a.entities...) {
+		if e.ShouldDie(a.width, a.height, now) {
+			if e.DeathCallback != nil {
+				e.DeathCallback(e, a)
+			}
+			a.DelEntity(e)
+		}
+	}
+}
+
+// TestDolphinDelayedOffscreenDeath ensures formation dolphins that start fully
+// off-screen are not removed before they enter the viewport (DieOffscreen arms
+// only after the first on-screen overlap).
+func TestDolphinDelayedOffscreenDeath(t *testing.T) {
+	anim := NewAnimation()
+	anim.width = 120
+	anim.height = 40
+
+	AddDolphins(nil, anim)
+	dolphins := anim.GetEntitiesByType("dolphin")
+	if len(dolphins) != 3 {
+		t.Fatalf("expected 3 dolphins, got %d", len(dolphins))
+	}
+	for _, d := range dolphins {
+		if d.DieOffscreen {
+			t.Fatalf("expected DieOffscreen false before first tick, got true for %s", d.DefaultColor)
+		}
+	}
+
+	tickAquariumNoDraw(anim)
+	dolphins = anim.GetEntitiesByType("dolphin")
+	if len(dolphins) != 3 {
+		t.Fatalf("after one tick expected 3 dolphins still present, got %d (trailing members must not die off-screen immediately)", len(dolphins))
+	}
+
+	for i := 0; i < 200; i++ {
+		ds := anim.GetEntitiesByType("dolphin")
+		if len(ds) == 0 {
+			t.Fatalf("lost all dolphins before every survivor could arm DieOffscreen (tick %d)", i)
+		}
+		allArmed := true
+		for _, d := range ds {
+			if !d.DieOffscreen {
+				allArmed = false
+				break
+			}
+		}
+		if allArmed {
+			return
+		}
+		tickAquariumNoDraw(anim)
+	}
+	t.Fatalf("expected every remaining dolphin to arm DieOffscreen within 200 ticks")
+}

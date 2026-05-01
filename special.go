@@ -613,6 +613,22 @@ ygcgwwwww  ygcgwwwww  ygcgwwwww
 	})
 }
 
+// dolphinDelayOffscreenDeath runs default movement but keeps DieOffscreen false
+// until the sprite overlaps the drawable area once, so formation members that
+// start fully off-screen are not removed before they enter view.
+func dolphinDelayOffscreenDeath(e *Entity, anim *Animation) bool {
+	moved := e.MoveEntity(anim)
+	if e.DieOffscreen {
+		return moved
+	}
+	sw := float64(anim.Width())
+	sh := float64(anim.Height())
+	if e.X+float64(e.width) >= 0 && e.X < sw && e.Y+float64(e.height) >= 0 && e.Y < sh {
+		e.DieOffscreen = true
+	}
+	return moved
+}
+
 // AddDolphins spawns three dolphins with fixed spacing.
 // Only the lead dolphin has death callback to avoid triple respawns.
 // Followers are visual companions in the same formation.
@@ -646,21 +662,23 @@ func AddDolphins(_ *Entity, anim *Animation) {
 		if i == 0 {
 			defaultColor = "BLUE"
 		} else if i == 1 {
-			defaultColor = "BLUE"
+			defaultColor = "MAGENTA"
 		}
 		if i == 0 {
 			deathCb = func(_ *Entity, a *Animation) { RandomObject(nil, a) }
 		}
 		anim.NewEntity(NewEntityOptions{
-			Shape:     shapes[dir],
-			Color:     []string{colors[dir]},
-			AutoTrans: true,
-			Position:  [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
+			EntityType: "dolphin",
+			Shape:      shapes[dir],
+			Color:      []string{colors[dir]},
+			AutoTrans:  true,
+			Position:   [3]int{x - (distance * (2 - i)), 5, Depth["water_gap3"]},
+			Callback:   dolphinDelayOffscreenDeath,
 			CallbackArgs: []float64{
 				speed, 0, 0, 0.5,
 			},
 			DeathCallback: deathCb,
-			DieOffscreen:  true,
+			DieOffscreen:  false,
 			DefaultColor:  defaultColor,
 		})
 	}
