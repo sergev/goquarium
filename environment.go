@@ -73,7 +73,7 @@ WWWWWWW WWWWW W W WWWWWWWWWWWWWW
 		Shape:        []string{castleShape},
 		Color:        []string{castleColor},
 		Position:     [3]int{anim.Width() - 32, anim.Height() - 13, Depth["castle"]},
-		DefaultColor: "BLACK",
+		DefaultColor: "DARK_GREY",
 	})
 }
 

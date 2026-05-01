@@ -150,6 +150,8 @@ func colorByName(name string) termbox.Attribute {
 		return termbox.ColorMagenta
 	case "CYAN":
 		return termbox.ColorCyan
+	case "DARK_GREY":
+		return termbox.ColorDarkGray
 	default:
 		return termbox.ColorWhite
 	}
